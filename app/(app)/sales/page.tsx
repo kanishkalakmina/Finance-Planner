@@ -1,0 +1,168 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+
+function fmt(n: number) { return n.toLocaleString("en-LK", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+interface Product { id: string; name: string; category: string; sell_price: number | null; quantity: number; item_type: string; }
+interface Log {
+  id: string; type: string; qty: number | null; unit_price: number | null; amount: number;
+  date: string; note: string | null; products?: { name: string } | null;
+}
+
+const CAT_ICON: Record<string, string> = { saree:"👘", shoe:"👟", bag:"👜", rental:"🔁", other:"📦" };
+
+export default function SalesPage() {
+  const today = new Date().toISOString().split("T")[0];
+  const [products, setProducts] = useState<Product[]>([]);
+  const [sales, setSales]       = useState<Log[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [saving, setSaving]     = useState(false);
+  const [error, setError]       = useState("");
+  const [success, setSuccess]   = useState("");
+
+  const [form, setForm] = useState({ product_id:"", qty:"1", unit_price:"", date:today, note:"" });
+
+  const load = useCallback(async () => {
+    const [prods, logs] = await Promise.all([
+      fetch("/api/products").then(r => r.json()),
+      fetch("/api/logs?type=sale").then(r => r.json()),
+    ]);
+    if (Array.isArray(prods)) setProducts(prods.filter((p: Product) => p.item_type === "sale" || p.item_type === "sale_and_rent"));
+    if (Array.isArray(logs)) setSales(logs);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function recordSale(e: React.FormEvent) {
+    e.preventDefault(); setSaving(true); setError(""); setSuccess("");
+    const qty = Number(form.qty);
+    const price = Number(form.unit_price);
+    const total = qty * price;
+    const product = products.find(p => p.id === form.product_id);
+
+    const res = await fetch("/api/logs", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        type:"sale", product_id: form.product_id,
+        qty, unit_price: price, amount: total,
+        date: form.date, note: form.note || null,
+      }),
+    });
+    const d = await res.json(); setSaving(false);
+    if (!res.ok) { setError(d.error); return; }
+    setSuccess(`Sale recorded! LKR ${fmt(total)} added to shop balance.`);
+    setForm({ product_id:"", qty:"1", unit_price:"", date:today, note:"" });
+    await load();
+    setTimeout(() => setSuccess(""), 4000);
+    void product;
+  }
+
+  const selectedProduct = products.find(p => p.id === form.product_id);
+  const previewTotal = form.unit_price && form.qty ? Number(form.unit_price) * Number(form.qty) : null;
+
+  const thisMonth = new Date().toISOString().slice(0, 7);
+  const monthSales = sales.filter(s => s.date.startsWith(thisMonth));
+  const monthRevenue = monthSales.reduce((s, l) => s + l.amount, 0);
+
+  if (loading) return <div className="text-gray-400 text-sm p-4">Loading…</div>;
+
+  return (
+    <div className="max-w-2xl space-y-5">
+      <h2 className="text-2xl font-bold text-gray-900">Sales</h2>
+
+      {/* Summary */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="card text-center">
+          <p className="text-xs text-gray-400">This Month</p>
+          <p className="text-lg font-bold text-green-600">LKR {fmt(monthRevenue)}</p>
+        </div>
+        <div className="card text-center">
+          <p className="text-xs text-gray-400">Units Sold</p>
+          <p className="text-lg font-bold text-gray-800">{monthSales.reduce((s, l) => s + (l.qty ?? 0), 0)}</p>
+        </div>
+        <div className="card text-center">
+          <p className="text-xs text-gray-400">All-Time</p>
+          <p className="text-lg font-bold text-blue-600">LKR {fmt(sales.reduce((s, l) => s + l.amount, 0))}</p>
+        </div>
+      </div>
+
+      {/* Sale Form */}
+      <div className="card space-y-4">
+        <h3 className="font-bold text-gray-800">🛒 Record a Sale</h3>
+        {error && <div className="bg-red-50 text-red-700 text-sm rounded-lg px-3 py-2">{error}</div>}
+        {success && <div className="bg-green-50 text-green-700 text-sm rounded-lg px-3 py-2">{success}</div>}
+
+        {products.length === 0 ? (
+          <p className="text-sm text-gray-400">No saleable products. Add products in Stock first.</p>
+        ) : (
+          <form onSubmit={recordSale} className="space-y-3">
+            <div>
+              <label className="label">Product</label>
+              <select className="input" required value={form.product_id} onChange={e => {
+                const p = products.find(pr => pr.id === e.target.value);
+                setForm(f => ({ ...f, product_id: e.target.value, unit_price: p?.sell_price ? String(p.sell_price) : "" }));
+              }}>
+                <option value="">Select product…</option>
+                {products.map(p => (
+                  <option key={p.id} value={p.id} disabled={p.quantity === 0}>
+                    {CAT_ICON[p.category]} {p.name} — {p.quantity} in stock{p.quantity === 0 ? " (out of stock)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {selectedProduct && (
+              <p className="text-xs text-gray-400">Suggested price: LKR {fmt(selectedProduct.sell_price ?? 0)} · Buy price: LKR {fmt(selectedProduct.buy_price ?? 0)}</p>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label">Qty Sold</label>
+                <input type="number" min="1" step="1" className="input" required value={form.qty} onChange={e => setForm(f => ({...f, qty:e.target.value}))} />
+              </div>
+              <div>
+                <label className="label">Price per Unit (LKR)</label>
+                <input type="number" min="0.01" step="0.01" className="input" required value={form.unit_price} onChange={e => setForm(f => ({...f, unit_price:e.target.value}))} />
+              </div>
+              <div>
+                <label className="label">Date</label>
+                <input type="date" className="input" required value={form.date} onChange={e => setForm(f => ({...f, date:e.target.value}))} />
+              </div>
+              <div>
+                <label className="label">Note (optional)</label>
+                <input type="text" className="input" placeholder="e.g. Walk-in customer" value={form.note} onChange={e => setForm(f => ({...f, note:e.target.value}))} />
+              </div>
+            </div>
+            {previewTotal !== null && (
+              <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-2 flex justify-between">
+                <span className="text-sm text-green-700">Will add to balance</span>
+                <span className="font-bold text-green-700">+ LKR {fmt(previewTotal)}</span>
+              </div>
+            )}
+            <button type="submit" className="btn-primary w-full" disabled={saving}>{saving ? "Saving…" : "Record Sale"}</button>
+          </form>
+        )}
+      </div>
+
+      {/* Sales history */}
+      {sales.length > 0 && (
+        <div className="card p-0 overflow-hidden">
+          <p className="text-sm font-semibold text-gray-700 px-4 py-3 border-b border-gray-100">Sales History</p>
+          {sales.map(s => (
+            <div key={s.id} className="flex items-center gap-3 px-4 py-3 border-b border-gray-50 last:border-0">
+              <span className="text-lg">🛒</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-800">{s.products?.name ?? "Product"}</p>
+                <p className="text-xs text-gray-400">
+                  {s.date} · {s.qty ?? 0} unit{(s.qty ?? 0) !== 1 ? "s" : ""} @ LKR {fmt(s.unit_price ?? 0)}
+                  {s.note ? ` · ${s.note}` : ""}
+                </p>
+              </div>
+              <span className="text-sm font-bold text-green-600 flex-shrink-0">+ LKR {fmt(s.amount)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
