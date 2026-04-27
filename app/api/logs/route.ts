@@ -1,5 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { StockLog, Product } from "@/types/database";
+
+type StockLogWithProduct = StockLog & { products: { name: string; category: string } | null };
 
 const QTY_UP   = ["restock", "rental_return"];
 const QTY_DOWN = ["sale", "rental_out", "stock_return"];
@@ -30,7 +33,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data ?? []);
+  return NextResponse.json((data as StockLogWithProduct[] | null) ?? []);
 }
 
 export async function POST(request: Request) {
@@ -48,13 +51,14 @@ export async function POST(request: Request) {
 
   // Stock check for qty-reducing operations
   if (product_id && qty && QTY_DOWN.includes(type)) {
-    const { data: p } = await supabase.from("products").select("quantity").eq("id", product_id).eq("user_id", user.id).single();
-    if (!p) return NextResponse.json({ error: "Product not found" }, { status: 404 });
-    if (p.quantity < Number(qty)) return NextResponse.json({ error: `Only ${p.quantity} in stock` }, { status: 400 });
+    const { data: p } = await supabase.from("products").select("quantity").eq("id", product_id).eq("user_id", user.id).single() as { data: Pick<Product, "quantity"> | null };
+    const pTyped = p;
+    if (!pTyped) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    if (pTyped.quantity < Number(qty)) return NextResponse.json({ error: `Only ${pTyped.quantity} in stock` }, { status: 400 });
   }
 
-  const { data: log, error } = await supabase
-    .from("stock_logs")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: log, error } = await (supabase.from("stock_logs") as any)
     .insert({
       user_id: user.id, type,
       product_id: product_id ?? null,
@@ -70,14 +74,16 @@ export async function POST(request: Request) {
 
   // Auto-update product quantity
   if (product_id && qty) {
-    const { data: p } = await supabase.from("products").select("quantity").eq("id", product_id).single();
-    if (p) {
+    const { data: p } = await supabase.from("products").select("quantity").eq("id", product_id).single() as { data: Pick<Product, "quantity"> | null };
+    const pTyped2 = p;
+    if (pTyped2) {
       const delta = QTY_UP.includes(type) ? Number(qty) : QTY_DOWN.includes(type) ? -Number(qty) : 0;
       if (delta !== 0) {
-        await supabase.from("products").update({ quantity: Math.max(0, p.quantity + delta) }).eq("id", product_id);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from("products") as any).update({ quantity: Math.max(0, pTyped2.quantity + delta) }).eq("id", product_id);
       }
     }
   }
 
-  return NextResponse.json(log, { status: 201 });
+  return NextResponse.json(log as StockLogWithProduct, { status: 201 });
 }

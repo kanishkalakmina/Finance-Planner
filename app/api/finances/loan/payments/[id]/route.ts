@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { LoanPayment } from "@/types/database";
 
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
@@ -14,7 +15,7 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
     .select("savings_tx_id")
     .eq("id", id)
     .eq("user_id", user.id)
-    .single();
+    .single() as { data: Pick<LoanPayment, "savings_tx_id"> | null };
 
   const { error } = await supabase
     .from("loan_payments")

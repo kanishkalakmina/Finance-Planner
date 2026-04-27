@@ -1,5 +1,20 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { BusinessIncome, BusinessExpense } from "@/types/database";
+
+type StockMovementWithProduct = {
+  id: string;
+  movement_type: string;
+  quantity: number | null;
+  unit_amount: number | null;
+  total_amount: number | null;
+  date: string;
+  note: string | null;
+  created_at: string;
+  business_income_id: string | null;
+  business_expense_id: string | null;
+  products: { name: string; category: string } | null;
+};
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -42,10 +57,10 @@ export async function GET(request: Request) {
 
   const [incRes, expRes, movRes] = await Promise.all([incomeQuery, expenseQuery, movementQuery]);
 
-  const incomeIds = new Set((incRes.data ?? []).map(r => r.id));
-  const expenseIds = new Set((expRes.data ?? []).map(r => r.id));
+  const incomeIds = new Set((incRes.data as Pick<BusinessIncome, "id">[] | null ?? []).map(r => r.id));
+  const expenseIds = new Set((expRes.data as Pick<BusinessExpense, "id">[] | null ?? []).map(r => r.id));
 
-  const income = (incRes.data ?? []).map(r => ({
+  const income = (incRes.data as (Pick<BusinessIncome, "id" | "amount" | "date" | "note" | "created_at"> & { source: string })[] | null ?? []).map(r => ({
     id: r.id,
     tx_type: "income" as const,
     label: r.source,
@@ -55,7 +70,7 @@ export async function GET(request: Request) {
     created_at: r.created_at,
   }));
 
-  const expenses = (expRes.data ?? []).map(r => ({
+  const expenses = (expRes.data as Pick<BusinessExpense, "id" | "category" | "amount" | "date" | "note" | "created_at">[] | null ?? []).map(r => ({
     id: r.id,
     tx_type: "expense" as const,
     label: r.category,
@@ -67,7 +82,7 @@ export async function GET(request: Request) {
 
   // Only include movements that are NOT already represented in business_income/expenses
   // (i.e., damage, adjustment, rental_out — the ones without linked business entries)
-  const unlinkedMovements = (movRes.data ?? [])
+  const unlinkedMovements = (movRes.data as StockMovementWithProduct[] | null ?? [])
     .filter(m => {
       if (m.business_income_id && incomeIds.has(m.business_income_id)) return false;
       if (m.business_expense_id && expenseIds.has(m.business_expense_id)) return false;

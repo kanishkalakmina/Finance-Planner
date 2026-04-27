@@ -1,5 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { Profile, StockLog, Product } from "@/types/database";
+
+type StockLogWithProduct = StockLog & { products: { name: string; category: string } | null };
+type StockLogWithName = StockLog & { products: { name: string } | null };
 
 const MONEY_IN  = ["sale", "capital", "rental_return", "stock_return"];
 const MONEY_OUT = ["restock", "expense", "withdrawal"];
@@ -29,11 +33,11 @@ export async function GET(request: Request) {
     supabase.from("stock_logs").select("product_id, qty, amount, products(name, category)").eq("user_id", user.id).eq("type", "sale"),
   ]);
 
-  const initial   = Number(profileRes.data?.initial_savings ?? 0);
-  const allLogs   = allLogsRes.data ?? [];
-  const trendLogs = trendLogsRes.data ?? [];
-  const products  = productsRes.data ?? [];
-  const salesLogs = topSalesRes.data ?? [];
+  const initial   = Number((profileRes.data as Pick<Profile, "initial_savings"> | null)?.initial_savings ?? 0);
+  const allLogs   = (allLogsRes.data as Pick<StockLog, "type" | "amount" | "date">[] | null) ?? [];
+  const trendLogs = (trendLogsRes.data as Pick<StockLog, "type" | "amount" | "date">[] | null) ?? [];
+  const products  = (productsRes.data as Pick<Product, "id" | "name" | "quantity" | "low_stock_threshold" | "item_type" | "buy_price">[] | null) ?? [];
+  const salesLogs = (topSalesRes.data as StockLogWithProduct[] | null) ?? [];
 
   // All-time balance
   const totalIn  = allLogs.filter(l => MONEY_IN.includes(l.type)).reduce((s, l) => s + Number(l.amount), 0);
@@ -67,7 +71,7 @@ export async function GET(request: Request) {
   }
 
   // Low stock
-  const low_stock = products.filter(p => p.item_type !== "rent" && p.quantity <= p.low_stock_threshold);
+  const low_stock = products.filter(p => p.item_type !== "for_rent" && p.quantity <= p.low_stock_threshold);
 
   // Top selling items — aggregate by product_id
   const salesMap: Record<string, { name: string; category: string; units: number; revenue: number }> = {};
@@ -103,7 +107,7 @@ export async function GET(request: Request) {
     total_capital_invested,
     month_in, month_out, net_profit,
     breakdown, trend,
-    recent_logs: recentRes.data ?? [],
+    recent_logs: (recentRes.data as StockLogWithName[] | null) ?? [],
     low_stock,
     top_sellers,
     avg_monthly_expenses: avgMonthlyExp,

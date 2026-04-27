@@ -1,5 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { RecurringPaymentLog } from "@/types/database";
+
+type RecurringPayment = {
+  id: string; name: string; typical_amount: number; is_unlimited: boolean;
+  total_months: number | null; category: string; wallet: string;
+  is_active: boolean; created_at: string;
+};
 
 const VALID_CATEGORIES = ["utilities", "transport", "personal", "financial", "other"];
 
@@ -17,7 +24,7 @@ export async function GET(request: Request) {
     .eq("user_id", user.id)
     .eq("is_active", true)
     .eq("wallet", wallet)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true }) as { data: RecurringPayment[] | null };
 
   if (!payments?.length) return NextResponse.json([]);
 
@@ -25,7 +32,7 @@ export async function GET(request: Request) {
     .from("recurring_payment_logs")
     .select("*")
     .eq("user_id", user.id)
-    .order("payment_date", { ascending: false });
+    .order("payment_date", { ascending: false }) as { data: (RecurringPaymentLog & { payment_id: string })[] | null };
 
   const logsMap: Record<string, typeof logs> = {};
   for (const log of logs ?? []) {
@@ -59,8 +66,8 @@ export async function POST(request: Request) {
   if (!is_unlimited && (!total_months || Number(total_months) <= 0))
     return NextResponse.json({ error: "Total months required for fixed-term" }, { status: 400 });
 
-  const { data, error } = await supabase
-    .from("recurring_payments")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from("recurring_payments") as any)
     .insert({
       user_id: user.id,
       name: name.trim(),

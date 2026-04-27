@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { Profile, StockLog } from "@/types/database";
 
 const MONEY_IN  = ["sale", "capital", "rental_return", "stock_return"];
 const MONEY_OUT = ["restock", "expense", "withdrawal"];
@@ -20,8 +21,8 @@ export async function POST(request: Request) {
     supabase.from("stock_logs").select("type, amount, date").eq("user_id", user.id),
   ]);
 
-  const capital = Number(profileRes.data?.initial_savings ?? 0);
-  const allLogs = allLogsRes.data ?? [];
+  const capital = Number((profileRes.data as Profile | null)?.initial_savings ?? 0);
+  const allLogs = (allLogsRes.data ?? []) as StockLog[];
 
   const totalIn  = allLogs.filter(l => MONEY_IN.includes(l.type)).reduce((s, l) => s + Number(l.amount), 0);
   const totalOut = allLogs.filter(l => MONEY_OUT.includes(l.type)).reduce((s, l) => s + Number(l.amount), 0);

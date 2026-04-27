@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { BusinessIncome, BusinessExpense, WalletTransfer } from "@/types/database";
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -23,9 +24,9 @@ export async function GET(request: Request) {
       .eq("user_id", user.id).gte("date", monthStart).lte("date", monthEnd),
   ]);
 
-  const income = incomeRes.data ?? [];
-  const expenses = expensesRes.data ?? [];
-  const transfers = transfersRes.data ?? [];
+  const income = (incomeRes.data as (BusinessIncome & { source: string })[] | null) ?? [];
+  const expenses = (expensesRes.data as BusinessExpense[] | null) ?? [];
+  const transfers = (transfersRes.data as WalletTransfer[] | null) ?? [];
 
   const total_income = income.reduce((s, r) => s + Number(r.amount), 0);
   const total_expenses = expenses.reduce((s, r) => s + Number(r.amount), 0);

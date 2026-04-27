@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { Profile, BusinessIncome, BusinessExpense } from "@/types/database";
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -21,15 +22,15 @@ export async function GET(request: Request) {
       .order("date", { ascending: false }),
   ]);
 
-  const startingCapital = Number(profileRes.data?.initial_savings ?? 0);
-  const totalInAll = (allIncomeRes.data ?? []).reduce((s, r) => s + Number(r.amount), 0);
-  const totalExpAll = (allExpensesRes.data ?? []).reduce((s, r) => s + Number(r.amount), 0);
+  const startingCapital = Number((profileRes.data as Profile | null)?.initial_savings ?? 0);
+  const totalInAll = (allIncomeRes.data as Pick<BusinessIncome, "amount">[] ?? []).reduce((s, r) => s + Number(r.amount), 0);
+  const totalExpAll = (allExpensesRes.data as Pick<BusinessExpense, "amount">[] ?? []).reduce((s, r) => s + Number(r.amount), 0);
 
   // Simple balance: starting capital + all income - all expenses
   const shop_balance = startingCapital + totalInAll - totalExpAll;
 
-  const income = monthIncomeRes.data ?? [];
-  const expenses = monthExpensesRes.data ?? [];
+  const income = (monthIncomeRes.data as (BusinessIncome & { source: string })[] | null) ?? [];
+  const expenses = (monthExpensesRes.data as BusinessExpense[] | null) ?? [];
   const total_income = income.reduce((s, r) => s + Number(r.amount), 0);
   const total_expenses = expenses.reduce((s, r) => s + Number(r.amount), 0);
   const net_profit = total_income - total_expenses;

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { WalletTransfer } from "@/types/database";
 
 export async function GET() {
   const supabase = await createClient();
@@ -13,7 +14,7 @@ export async function GET() {
     .order("date", { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data ?? []);
+  return NextResponse.json((data as WalletTransfer[] | null) ?? []);
 }
 
 export async function POST(request: Request) {
@@ -36,8 +37,8 @@ export async function POST(request: Request) {
     ? (from_pool === "salary" ? "salary" : "savings")
     : "savings";
 
-  const { data, error } = await supabase
-    .from("wallet_transfers")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from("wallet_transfers") as any)
     .insert({
       user_id: user.id,
       direction,
@@ -50,5 +51,5 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+  return NextResponse.json(data as WalletTransfer);
 }

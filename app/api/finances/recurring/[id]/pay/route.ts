@@ -19,14 +19,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     .select("id, name, wallet")
     .eq("id", id)
     .eq("user_id", user.id)
-    .single();
+    .single() as { data: { id: string; name: string; wallet: string } | null };
   if (!rp) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // For personal wallet recurring payments, deduct from salary balance
   let savings_tx_id: string | null = null;
   if (rp.wallet === "personal") {
-    const { data: tx, error: txErr } = await supabase
-      .from("savings_transactions")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: tx, error: txErr } = await (supabase.from("savings_transactions") as any)
       .insert({
         user_id: user.id,
         type: "withdrawal",
@@ -42,8 +42,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     savings_tx_id = tx.id;
   }
 
-  const { data, error } = await supabase
-    .from("recurring_payment_logs")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from("recurring_payment_logs") as any)
     .insert({
       payment_id: id,
       user_id: user.id,
@@ -81,7 +81,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     .select("savings_tx_id")
     .eq("id", logId)
     .eq("user_id", user.id)
-    .single();
+    .single() as { data: Pick<import("@/types/database").RecurringPaymentLog, "savings_tx_id"> | null };
 
   const { error } = await supabase
     .from("recurring_payment_logs")

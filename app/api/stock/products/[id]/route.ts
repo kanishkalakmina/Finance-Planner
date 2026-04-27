@@ -10,13 +10,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const body = await request.json();
 
   const allowed: Record<string, unknown> = {};
-  const fields = ["name", "category", "item_type", "purchase_price", "selling_price", "rental_price", "low_stock_threshold"];
+  const fields = ["name", "category", "item_type", "buy_price", "sell_price", "rental_price", "low_stock_threshold"];
   for (const f of fields) {
     if (f in body) allowed[f] = body[f];
   }
 
-  const { data, error } = await supabase
-    .from("products")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from("products") as any)
     .update(allowed)
     .eq("id", id)
     .eq("user_id", user.id)
@@ -35,8 +35,8 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
 
   // Soft delete — set is_active = false
-  const { error } = await supabase
-    .from("products")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from("products") as any)
     .update({ is_active: false })
     .eq("id", id)
     .eq("user_id", user.id);

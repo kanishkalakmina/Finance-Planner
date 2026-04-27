@@ -17,8 +17,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if ("status" in updates && !["active", "matured", "withdrawn"].includes(updates.status as string))
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
 
-  const { data, error } = await supabase
-    .from("fixed_deposits")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from("fixed_deposits") as any)
     .update(updates)
     .eq("id", id)
     .eq("user_id", user.id)

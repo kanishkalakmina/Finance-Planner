@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { BusinessIncome, BusinessExpense, WalletTransfer, SavingsTransaction } from "@/types/database";
 
 export async function GET() {
   const supabase = await createClient();
@@ -13,10 +14,10 @@ export async function GET() {
     supabase.from("savings_transactions").select("amount, date").eq("user_id", user.id).eq("purpose", "shop_setup").order("date"),
   ]);
 
-  const income = incomeRes.data ?? [];
-  const expenses = expensesRes.data ?? [];
-  const transfers = transfersRes.data ?? [];
-  const setup = setupRes.data ?? [];
+  const income    = (incomeRes.data    ?? []) as Pick<BusinessIncome, "amount" | "date">[];
+  const expenses  = (expensesRes.data  ?? []) as Pick<BusinessExpense, "amount" | "date">[];
+  const transfers = (transfersRes.data ?? []) as Pick<WalletTransfer, "amount" | "date" | "direction">[];
+  const setup     = (setupRes.data     ?? []) as Pick<SavingsTransaction, "amount" | "date">[];
 
   // Build per-month buckets for last 12 months
   const now = new Date();

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { Loan } from "@/types/database";
 
 export async function GET() {
   const supabase = await createClient();
@@ -11,7 +12,7 @@ export async function GET() {
     .select("id")
     .eq("user_id", user.id)
     .eq("is_active", true)
-    .maybeSingle();
+    .maybeSingle() as { data: Pick<Loan, "id"> | null };
 
   if (!loan) return NextResponse.json([]);
 
@@ -20,7 +21,7 @@ export async function GET() {
     .select("*")
     .eq("loan_id", loan.id)
     .eq("user_id", user.id)
-    .order("payment_date", { ascending: false });
+    .order("payment_date", { ascending: false }) as { data: unknown[] | null };
 
   return NextResponse.json(data ?? []);
 }
@@ -43,13 +44,13 @@ export async function POST(request: Request) {
     .select("id, name")
     .eq("user_id", user.id)
     .eq("is_active", true)
-    .maybeSingle();
+    .maybeSingle() as { data: Pick<Loan, "id" | "name"> | null };
 
   if (!loan) return NextResponse.json({ error: "No active loan" }, { status: 400 });
 
   // Deduct from salary balance
-  const { data: tx, error: txErr } = await supabase
-    .from("savings_transactions")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: tx, error: txErr } = await (supabase.from("savings_transactions") as any)
     .insert({
       user_id: user.id,
       type: "withdrawal",
@@ -64,8 +65,8 @@ export async function POST(request: Request) {
 
   if (txErr) return NextResponse.json({ error: txErr.message }, { status: 500 });
 
-  const { data, error } = await supabase
-    .from("loan_payments")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from("loan_payments") as any)
     .insert({
       loan_id: loan.id,
       user_id: user.id,

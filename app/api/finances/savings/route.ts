@@ -1,5 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { Profile, SavingsTransaction, WalletTransfer } from "@/types/database";
+
+type SavingsTransactionWithPool = SavingsTransaction & { pool?: string | null };
+type WalletTransferWithPool = WalletTransfer & { direction: string; from_pool?: string | null };
 
 export async function GET() {
   const supabase = await createClient();
@@ -12,9 +16,9 @@ export async function GET() {
     supabase.from("wallet_transfers").select("*").eq("user_id", user.id).order("date", { ascending: false }),
   ]);
 
-  const initialSavings = Number(profileRes.data?.initial_savings ?? 0);
-  const transactions = txRes.data ?? [];
-  const transfers = transferRes.data ?? [];
+  const initialSavings = Number((profileRes.data as Pick<Profile, "initial_savings"> | null)?.initial_savings ?? 0);
+  const transactions = (txRes.data as SavingsTransactionWithPool[] | null) ?? [];
+  const transfers = (transferRes.data as WalletTransferWithPool[] | null) ?? [];
 
   // ── Separate pool balances ──
   // Savings pool: initial_savings + non-salary deposits (pool='savings') - savings withdrawals - business transfers
@@ -113,8 +117,8 @@ export async function POST(request: Request) {
   // Auto-assign pool: salary deposits → salary, everything else → savings
   const assignedPool = pool ?? (type === "deposit" && source === "salary" ? "salary" : "savings");
 
-  const { data, error } = await supabase
-    .from("savings_transactions")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from("savings_transactions") as any)
     .insert({
       user_id: user.id,
       type,
@@ -129,5 +133,5 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+  return NextResponse.json(data as SavingsTransactionWithPool);
 }

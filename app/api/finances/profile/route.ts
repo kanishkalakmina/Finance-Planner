@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { Profile } from "@/types/database";
 
 export async function GET() {
   const supabase = await createClient();
@@ -13,7 +14,7 @@ export async function GET() {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+  return NextResponse.json(data as Profile);
 }
 
 export async function PATCH(request: Request) {
@@ -39,12 +40,12 @@ export async function PATCH(request: Request) {
     updates.initial_savings = val;
   }
 
-  const { data, error } = await supabase
-    .from("profiles")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from("profiles") as any)
     .upsert({ id: user.id, ...updates }, { onConflict: "id" })
     .select()
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+  return NextResponse.json(data as Profile);
 }

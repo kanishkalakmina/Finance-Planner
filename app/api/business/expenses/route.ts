@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { BusinessExpense } from "@/types/database";
 
 const VALID_CATEGORIES = ["stock", "utilities", "transport", "wages", "rent", "marketing", "other"];
 
@@ -25,7 +26,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data ?? []);
+  return NextResponse.json((data as BusinessExpense[] | null) ?? []);
 }
 
 export async function POST(request: Request) {
@@ -43,12 +44,12 @@ export async function POST(request: Request) {
   if (!date)
     return NextResponse.json({ error: "Date required" }, { status: 400 });
 
-  const { data, error } = await supabase
-    .from("business_expenses")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from("business_expenses") as any)
     .insert({ user_id: user.id, category: category ?? "other", amount: Number(amount), date, note: note?.trim() || null })
     .select()
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+  return NextResponse.json(data as BusinessExpense);
 }

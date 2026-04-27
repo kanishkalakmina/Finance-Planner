@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { Profile, SetupExpense, SavingsTransaction, PersonalExpense, Loan } from "@/types/database";
 
 export async function GET() {
   const supabase = await createClient();
@@ -14,9 +15,9 @@ export async function GET() {
     supabase.from("loans").select("monthly_payment").eq("user_id", user.id).eq("is_active", true).maybeSingle(),
   ]);
 
-  const setupExpenses = setupExpensesRes.data ?? [];
-  const savingsTxns = savingsTxnsRes.data ?? [];
-  const personalExpenses = expensesRes.data ?? [];
+  const setupExpenses = (setupExpensesRes.data as SetupExpense[] | null) ?? [];
+  const savingsTxns = (savingsTxnsRes.data as Pick<SavingsTransaction, "type" | "amount" | "purpose">[] | null) ?? [];
+  const personalExpenses = (expensesRes.data as Pick<PersonalExpense, "amount">[] | null) ?? [];
 
   // Total withdrawn from savings for shop setup purpose
   const totalSetupWithdrawals = savingsTxns
@@ -24,7 +25,7 @@ export async function GET() {
     .reduce((s, t) => s + Number(t.amount), 0);
 
   // Current savings balance
-  let savingsBalance = Number(profileRes.data?.initial_savings ?? 0);
+  let savingsBalance = Number((profileRes.data as Pick<Profile, "initial_savings" | "monthly_salary"> | null)?.initial_savings ?? 0);
   for (const t of savingsTxns) {
     savingsBalance += t.type === "deposit" ? Number(t.amount) : -Number(t.amount);
   }
@@ -38,8 +39,8 @@ export async function GET() {
   // Monthly obligation for risk calculation
   const monthlyExpenses = personalExpenses.length > 0
     ? personalExpenses.reduce((s, e) => s + Number(e.amount), 0) / 3
-    : Number(profileRes.data?.monthly_salary ?? 0) * 0.3;
-  const loanPayment = Number(loanRes.data?.monthly_payment ?? 0);
+    : Number((profileRes.data as Pick<Profile, "initial_savings" | "monthly_salary"> | null)?.monthly_salary ?? 0) * 0.3;
+  const loanPayment = Number((loanRes.data as Pick<Loan, "monthly_payment"> | null)?.monthly_payment ?? 0);
   const monthlyObligation = monthlyExpenses + loanPayment;
 
   // Risk level

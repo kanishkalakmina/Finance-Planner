@@ -10,8 +10,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const body = await request.json();
   const { category, amount, date, note } = body;
 
-  const { data, error } = await supabase
-    .from("setup_expenses")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from("setup_expenses") as any)
     .update({ category, amount: Number(amount), date, note: note ?? null })
     .eq("id", id)
     .eq("user_id", user.id)

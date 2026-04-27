@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { BusinessExpense } from "@/types/database";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
@@ -10,8 +11,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const body = await request.json();
   const { category, amount, date, note } = body;
 
-  const { data, error } = await supabase
-    .from("business_expenses")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from("business_expenses") as any)
     .update({ category, amount: Number(amount), date, note: note ?? null })
     .eq("id", id)
     .eq("user_id", user.id)
@@ -19,7 +20,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+  return NextResponse.json(data as BusinessExpense);
 }
 
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {

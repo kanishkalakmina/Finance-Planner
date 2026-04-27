@@ -1,5 +1,25 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { Rental } from "@/types/database";
+
+type StockProduct = {
+  id: string;
+  name: string;
+  category: string;
+  item_type: string;
+  buy_price: number;
+  sell_price: number | null;
+  rental_price: number | null;
+  quantity: number;
+  low_stock_threshold: number;
+};
+
+type StockMovementRow = {
+  product_id: string | null;
+  movement_type: string;
+  quantity: number;
+  total_amount: number | null;
+};
 
 export async function GET() {
   const supabase = await createClient();
@@ -12,9 +32,9 @@ export async function GET() {
     supabase.from("stock_movements").select("product_id, movement_type, quantity, total_amount").eq("user_id", user.id),
   ]);
 
-  const products = productsRes.data ?? [];
-  const rentals = rentalsRes.data ?? [];
-  const movements = movementsRes.data ?? [];
+  const products = (productsRes.data as StockProduct[] | null) ?? [];
+  const rentals = (rentalsRes.data as Pick<Rental, "product_id" | "quantity" | "rental_amount" | "is_returned">[] | null) ?? [];
+  const movements = (movementsRes.data as StockMovementRow[] | null) ?? [];
 
   // Per-product computed stats
   const enriched = products.map(p => {
@@ -23,12 +43,12 @@ export async function GET() {
     const totalRentalIncome = completedRentals.reduce((s, r) => s + r.rental_amount * r.quantity, 0);
     const totalInvested = movements
       .filter(m => m.product_id === p.id && m.movement_type === "restock")
-      .reduce((s, m) => s + Number(m.total_amount ?? 0), 0) + Number(p.purchase_price) * Number(p.quantity);
+      .reduce((s, m) => s + Number(m.total_amount ?? 0), 0) + Number(p.buy_price) * Number(p.quantity);
 
     const available = p.quantity;
-    const isLowStock = p.item_type !== "rent" && available <= p.low_stock_threshold;
-    const margin = p.selling_price ? ((Number(p.selling_price) - Number(p.purchase_price)) / Number(p.selling_price)) * 100 : null;
-    const stockValue = Number(p.purchase_price) * available;
+    const isLowStock = p.item_type !== "for_rent" && available <= p.low_stock_threshold;
+    const margin = p.sell_price ? ((Number(p.sell_price) - Number(p.buy_price)) / Number(p.sell_price)) * 100 : null;
+    const stockValue = Number(p.buy_price) * available;
     const rentalROI = totalInvested > 0 ? (totalRentalIncome / totalInvested) * 100 : 0;
 
     return {
@@ -47,7 +67,7 @@ export async function GET() {
   // Summary stats
   const totalStockValue = enriched.reduce((s, p) => s + p.stock_value, 0);
   const lowStockItems = enriched.filter(p => p.is_low_stock);
-  const rentalItems = enriched.filter(p => p.item_type === "rent" || p.item_type === "sale_and_rent");
+  const rentalItems = enriched.filter(p => p.item_type === "for_rent" || p.item_type === "buy_and_rent");
   const totalRentalInvested = rentalItems.reduce((s, p) => s + p.total_invested, 0);
   const totalRentalEarned = rentalItems.reduce((s, p) => s + p.total_rental_income, 0);
   const overallRentalROI = totalRentalInvested > 0 ? (totalRentalEarned / totalRentalInvested) * 100 : 0;

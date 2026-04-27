@@ -14,7 +14,7 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
     .select("*")
     .eq("id", id)
     .eq("user_id", user.id)
-    .single();
+    .single() as { data: { product_id: string; movement_type: string; quantity: number; business_income_id: string | null; business_expense_id: string | null } | null };
 
   if (!movement) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -23,13 +23,14 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
     .from("products")
     .select("quantity")
     .eq("id", movement.product_id)
-    .single();
+    .single() as { data: { quantity: number } | null };
 
   if (product) {
     const reversedQty = ["restock", "rental_return"].includes(movement.movement_type)
       ? product.quantity - movement.quantity
       : product.quantity + movement.quantity;
-    await supabase.from("products").update({ quantity: Math.max(0, reversedQty) }).eq("id", movement.product_id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from("products") as any).update({ quantity: Math.max(0, reversedQty) }).eq("id", movement.product_id);
   }
 
   // Remove linked business entries

@@ -1,6 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
+type ProfileRow    = { monthly_salary: number | null; initial_savings: number | null };
+type LoanRow        = { monthly_payment: number | null; months_remaining: number | null };
+type AmountRow      = { amount: number | string | null };
+type SavingsTxnRow  = { type: string; amount: number | string | null; source: string | null };
+type TransferRow    = { direction: string; amount: number | string | null };
+
 interface FeedbackBody {
   entry_type: string;
   entry_amount: number;
@@ -45,25 +51,25 @@ export async function POST(request: Request) {
     supabase.from("wallet_transfers").select("direction, amount").eq("user_id", user.id),
   ]);
 
-  const profile = profileRes.data;
-  const loan = loanRes.data;
+  const profile = profileRes.data as ProfileRow | null;
+  const loan = loanRes.data as LoanRow | null;
   const salary = Number(profile?.monthly_salary ?? 0);
   const loanPayment = Number(loan?.monthly_payment ?? 0);
   const loanMonthsLeft = Number(loan?.months_remaining ?? 0);
 
-  const personalExpTotal = (personalExpRes.data ?? []).reduce((s, e) => s + Number(e.amount), 0);
+  const personalExpTotal = (personalExpRes.data as AmountRow[] ?? []).reduce((s, e) => s + Number(e.amount), 0);
 
   // Business balance (all-time)
-  const bizIncome = (bizIncRes.data ?? []).reduce((s, r) => s + Number(r.amount), 0);
-  const bizExpenses = (bizExpRes.data ?? []).reduce((s, r) => s + Number(r.amount), 0);
-  const transfers = transfersRes.data ?? [];
+  const bizIncome = (bizIncRes.data as AmountRow[] ?? []).reduce((s, r) => s + Number(r.amount), 0);
+  const bizExpenses = (bizExpRes.data as AmountRow[] ?? []).reduce((s, r) => s + Number(r.amount), 0);
+  const transfers = (transfersRes.data as TransferRow[] ?? []);
   const transfersIn = transfers.filter(t => t.direction === "personal_to_shop").reduce((s, t) => s + Number(t.amount), 0);
   const transfersOut = transfers.filter(t => t.direction === "shop_to_personal").reduce((s, t) => s + Number(t.amount), 0);
   const setupFunding = Number(profile?.initial_savings ?? 0);
   const bizBalance = transfersIn + setupFunding + bizIncome - bizExpenses - transfersOut;
 
   // Savings balance (all-time)
-  const txns = savingsRes.data ?? [];
+  const txns = (savingsRes.data as SavingsTxnRow[] ?? []);
   let savingsBalance = Number(profile?.initial_savings ?? 0);
   for (const t of txns) {
     savingsBalance += t.type === "deposit" ? Number(t.amount) : -Number(t.amount);

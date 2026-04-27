@@ -1,5 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { ActiveRental, Product } from "@/types/database";
+
+type ActiveRentalWithProduct = ActiveRental & { products: { name: string; category: string; rental_price: number | null } | null };
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -18,7 +21,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data ?? []);
+  return NextResponse.json((data as ActiveRentalWithProduct[] | null) ?? []);
 }
 
 export async function POST(request: Request) {
@@ -33,22 +36,25 @@ export async function POST(request: Request) {
   const qty = Number(quantity);
   const entryDate = rent_date ?? new Date().toISOString().split("T")[0];
 
-  const { data: product } = await supabase.from("products").select("quantity, name").eq("id", product_id).eq("user_id", user.id).single();
-  if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
-  if (product.quantity < qty) return NextResponse.json({ error: `Only ${product.quantity} available` }, { status: 400 });
+  const { data: product } = await supabase.from("products").select("quantity, name").eq("id", product_id).eq("user_id", user.id).single() as { data: Pick<Product, "quantity" | "name"> | null };
+  const productTyped = product;
+  if (!productTyped) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+  if (productTyped.quantity < qty) return NextResponse.json({ error: `Only ${productTyped.quantity} available` }, { status: 400 });
 
   // Reduce stock
-  await supabase.from("products").update({ quantity: product.quantity - qty }).eq("id", product_id);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from("products") as any).update({ quantity: productTyped.quantity - qty }).eq("id", product_id);
 
   // Log rental_out (no money impact — fee collected on return)
-  await supabase.from("stock_logs").insert({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from("stock_logs") as any).insert({
     user_id: user.id, type: "rental_out", product_id, qty,
     unit_price: Number(rental_fee), amount: 0, date: entryDate,
-    note: customer_name ? `Rented to ${customer_name}` : `Rented out: ${product.name}`,
+    note: customer_name ? `Rented to ${customer_name}` : `Rented out: ${productTyped.name}`,
   });
 
-  const { data: rental, error } = await supabase
-    .from("active_rentals")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rental, error } = await (supabase.from("active_rentals") as any)
     .insert({
       user_id: user.id, product_id, quantity: qty,
       customer_name: customer_name?.trim() || null,
@@ -58,5 +64,5 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(rental, { status: 201 });
+  return NextResponse.json(rental as ActiveRentalWithProduct, { status: 201 });
 }

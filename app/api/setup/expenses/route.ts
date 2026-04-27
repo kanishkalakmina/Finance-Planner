@@ -35,8 +35,8 @@ export async function POST(request: Request) {
   if (!date)
     return NextResponse.json({ error: "Date required" }, { status: 400 });
 
-  const { data, error } = await supabase
-    .from("setup_expenses")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from("setup_expenses") as any)
     .insert({
       user_id: user.id,
       category,

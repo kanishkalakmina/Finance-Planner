@@ -34,8 +34,8 @@ export async function POST(request: Request) {
   start.setMonth(start.getMonth() + Number(tenure_months));
   const maturity_date = start.toISOString().split("T")[0];
 
-  const { data, error } = await supabase
-    .from("fixed_deposits")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from("fixed_deposits") as any)
     .insert({
       user_id: user.id,
       bank_name: bank_name.trim(),

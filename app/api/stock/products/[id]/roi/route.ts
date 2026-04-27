@@ -1,5 +1,27 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { Rental } from "@/types/database";
+
+type StockMovementRow = {
+  movement_type: string;
+  quantity: number;
+  total_amount: number | null;
+};
+
+type RentalRow = Rental & { rental_amount: number; is_returned: boolean };
+
+type ProductRow = {
+  id: string;
+  name: string;
+  quantity: number;
+  buy_price: number;
+  sell_price: number | null;
+  rental_price: number | null;
+  category: string;
+  item_type: string;
+  low_stock_threshold: number;
+  is_active: boolean;
+};
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
@@ -14,16 +36,16 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     supabase.from("stock_movements").select("*").eq("product_id", id).eq("user_id", user.id),
   ]);
 
-  const product = productRes.data;
+  const product = productRes.data as ProductRow | null;
   if (!product) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const rentals = rentalsRes.data ?? [];
-  const movements = movementsRes.data ?? [];
+  const rentals = (rentalsRes.data as RentalRow[] | null) ?? [];
+  const movements = (movementsRes.data as StockMovementRow[] | null) ?? [];
 
   // Total units purchased (restock movements)
   const totalPurchased = movements.filter(m => m.movement_type === "restock").reduce((s, m) => s + m.quantity, 0) + Number(product.quantity);
   const totalCostFromRestocks = movements.filter(m => m.movement_type === "restock").reduce((s, m) => s + Number(m.total_amount ?? 0), 0);
-  const initialCost = Number(product.purchase_price) * Number(product.quantity);
+  const initialCost = Number(product.buy_price) * Number(product.quantity);
   const totalInvested = totalCostFromRestocks + initialCost;
 
   // Total income from rentals

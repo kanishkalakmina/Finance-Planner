@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { Product } from "@/types/database";
 
 export async function GET() {
   const supabase = await createClient();
@@ -10,7 +11,7 @@ export async function GET() {
     .from("products").select("*").eq("user_id", user.id).eq("is_active", true).order("name");
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data ?? []);
+  return NextResponse.json((data as Product[] | null) ?? []);
 }
 
 export async function POST(request: Request) {
@@ -23,8 +24,8 @@ export async function POST(request: Request) {
 
   if (!name?.trim()) return NextResponse.json({ error: "Name required" }, { status: 400 });
 
-  const { data, error } = await supabase
-    .from("products")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from("products") as any)
     .insert({
       user_id: user.id,
       name: name.trim(), category, item_type,
@@ -38,21 +39,24 @@ export async function POST(request: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  const dataTyped = data as Product;
+
   // Auto-deduct initial stock cost from shop balance
   const qty = Number(quantity ?? 0);
   const cost = Number(buy_price ?? 0);
   if (qty > 0 && cost > 0) {
-    await supabase.from("stock_logs").insert({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from("stock_logs") as any).insert({
       user_id: user.id,
       type: "restock",
-      product_id: data.id,
+      product_id: dataTyped.id,
       qty,
       unit_price: cost,
       amount: qty * cost,
       date: new Date().toISOString().split("T")[0],
-      note: `Initial stock: ${data.name} ×${qty}`,
+      note: `Initial stock: ${dataTyped.name} ×${qty}`,
     });
   }
 
-  return NextResponse.json(data, { status: 201 });
+  return NextResponse.json(dataTyped, { status: 201 });
 }

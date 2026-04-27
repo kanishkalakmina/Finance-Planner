@@ -7,8 +7,8 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const { error } = await supabase
-    .from("recurring_payments")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from("recurring_payments") as any)
     .update({ is_active: false })
     .eq("id", id)
     .eq("user_id", user.id);

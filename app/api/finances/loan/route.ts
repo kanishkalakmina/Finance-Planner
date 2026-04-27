@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { Loan } from "@/types/database";
 
 export async function GET() {
   const supabase = await createClient();
@@ -11,7 +12,7 @@ export async function GET() {
     .select("*")
     .eq("user_id", user.id)
     .eq("is_active", true)
-    .maybeSingle();
+    .maybeSingle() as { data: (Loan & { original_months?: number | null }) | null; error: unknown };
 
   if (!loan) return NextResponse.json(null);
 
@@ -48,10 +49,11 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Invalid monthly payment" }, { status: 400 });
 
   // Deactivate existing loans
-  await supabase.from("loans").update({ is_active: false }).eq("user_id", user.id);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from("loans") as any).update({ is_active: false }).eq("user_id", user.id);
 
-  const { data, error } = await supabase
-    .from("loans")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from("loans") as any)
     .insert({
       user_id: user.id,
       name,
@@ -64,7 +66,7 @@ export async function PATCH(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ...data, months_remaining: original_months, payments_made: 0 });
+  return NextResponse.json({ ...(data as Loan), months_remaining: original_months, payments_made: 0 });
 }
 
 export async function DELETE() {
@@ -72,6 +74,7 @@ export async function DELETE() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  await supabase.from("loans").update({ is_active: false }).eq("user_id", user.id);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from("loans") as any).update({ is_active: false }).eq("user_id", user.id);
   return NextResponse.json({ success: true });
 }

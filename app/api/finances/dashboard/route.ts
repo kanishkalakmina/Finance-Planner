@@ -1,5 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { Profile, Loan, PersonalExpense, SavingsTransaction, WalletTransfer } from "@/types/database";
+
+type SavingsTransactionWithPool = SavingsTransaction & { pool?: string | null };
+type WalletTransferWithPool = WalletTransfer & { direction: string; from_pool?: string | null };
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -23,17 +27,17 @@ export async function GET(request: Request) {
     supabase.from("wallet_transfers").select("direction, amount, date").eq("user_id", user.id),
   ]);
 
-  const profile = profileRes.data;
-  const loan = loanRes.data;
-  const expenses = expensesRes.data ?? [];
-  const txns = txnsRes.data ?? [];
-  const transfers = transfersRes.data ?? [];
+  const profile = profileRes.data as Pick<Profile, "monthly_salary" | "initial_savings" | "next_salary_date"> | null;
+  const loan = loanRes.data as Pick<Loan, "name" | "monthly_payment" | "months_remaining"> | null;
+  const expenses = (expensesRes.data as Pick<PersonalExpense, "category" | "amount" | "date" | "note">[] | null) ?? [];
+  const txns = (txnsRes.data as SavingsTransactionWithPool[] | null) ?? [];
+  const transfers = (transfersRes.data as WalletTransferWithPool[] | null) ?? [];
 
   // Separate pool balances
   let savingsPoolBalance = Number(profile?.initial_savings ?? 0);
   let salaryPoolBalance = 0;
   for (const t of txns) {
-    const pool = (t as Record<string, unknown>).pool ?? (t.source === "salary" ? "salary" : "savings");
+    const pool = t.pool ?? (t.source === "salary" ? "salary" : "savings");
     const amt = Number(t.amount);
     if (pool === "salary") salaryPoolBalance += t.type === "deposit" ? amt : -amt;
     else savingsPoolBalance += t.type === "deposit" ? amt : -amt;

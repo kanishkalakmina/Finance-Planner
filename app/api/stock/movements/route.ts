@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     .select("*")
     .eq("id", product_id)
     .eq("user_id", user.id)
-    .single();
+    .single() as { data: import("@/types/database").Product | null; error: unknown };
 
   if (pErr || !product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
 
@@ -71,8 +71,8 @@ export async function POST(request: Request) {
   if (movement_type === "restock") {
     newQuantity = product.quantity + qty;
     // Create business expense (stock purchase)
-    const { data: expEntry } = await supabase
-      .from("business_expenses")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: expEntry } = await (supabase.from("business_expenses") as any)
       .insert({
         user_id: user.id,
         category: "stock",
@@ -88,8 +88,8 @@ export async function POST(request: Request) {
     newQuantity = product.quantity - qty;
     if (newQuantity < 0) return NextResponse.json({ error: "Insufficient stock" }, { status: 400 });
     // Full revenue stays in shop wallet — owner manually withdraws profit via transfer
-    const { data: incEntry } = await supabase
-      .from("business_income")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: incEntry } = await (supabase.from("business_income") as any)
       .insert({
         user_id: user.id,
         source: INCOME_SOURCE_MAP[product.category] ?? "sales",
@@ -108,8 +108,8 @@ export async function POST(request: Request) {
   } else if (movement_type === "rental_return") {
     newQuantity = product.quantity + qty;
     if (totalAmt) {
-      const { data: incEntry } = await supabase
-        .from("business_income")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: incEntry } = await (supabase.from("business_income") as any)
         .insert({
           user_id: user.id,
           source: "rental",
@@ -131,11 +131,12 @@ export async function POST(request: Request) {
   }
 
   // Update product quantity
-  await supabase.from("products").update({ quantity: newQuantity }).eq("id", product_id);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from("products") as any).update({ quantity: newQuantity }).eq("id", product_id);
 
   // Log movement
-  const { data: movement, error: mErr } = await supabase
-    .from("stock_movements")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: movement, error: mErr } = await (supabase.from("stock_movements") as any)
     .insert({
       user_id: user.id,
       product_id,

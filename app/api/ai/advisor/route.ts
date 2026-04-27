@@ -3,6 +3,42 @@ import { NextResponse } from "next/server";
 
 type ProfileRow = { initial_savings: number | null };
 
+type StockLogRow = {
+  type: string;
+  amount: number | string | null;
+  date: string | null;
+  note: string | null;
+  qty: number | null;
+  unit_price: number | null;
+  product_id: string | null;
+  products: { name: string; category: string } | null;
+};
+
+type ProductRow = {
+  id: string;
+  name: string;
+  category: string;
+  item_type: string;
+  buy_price: number | string | null;
+  sell_price: number | string | null;
+  rental_price: number | string | null;
+  quantity: number;
+  low_stock_threshold: number;
+  is_active: boolean;
+};
+
+type RentalRow = {
+  rental_fee: number | string | null;
+  fee_collected: number | string | null;
+  returned: boolean;
+  rent_date: string | null;
+  actual_return_date: string | null;
+  expected_return_date: string | null;
+  customer_name: string | null;
+  quantity: number | null;
+  products: { name: string; category: string } | null;
+};
+
 function fallback(question: string) {
   return {
     advice: `Regarding "${question}" — keep tracking all transactions daily to build accurate data for better analysis.`,
@@ -40,15 +76,15 @@ export async function POST(request: Request) {
       .select("id, name, category, item_type, buy_price, sell_price, rental_price, quantity, low_stock_threshold, is_active")
       .eq("user_id", user.id),
     supabase.from("active_rentals")
-      .select("rental_fee, fee_collected, returned, rent_date, actual_return_date, customer_name, quantity, products(name, category)")
+      .select("rental_fee, fee_collected, returned, rent_date, actual_return_date, expected_return_date, customer_name, quantity, products(name, category)")
       .eq("user_id", user.id),
   ]);
 
   const profile  = profileRes.data as ProfileRow | null;
   const capital  = Number(profile?.initial_savings ?? 0);
-  const allLogs  = allLogsRes.data ?? [];
-  const products = productsRes.data ?? [];
-  const rentals  = rentalsRes.data ?? [];
+  const allLogs  = (allLogsRes.data ?? []) as StockLogRow[];
+  const products = (productsRes.data ?? []) as ProductRow[];
+  const rentals  = (rentalsRes.data ?? []) as RentalRow[];
 
   // ── Balance ──────────────────────────────────────────────────────
   const totalIn  = allLogs.filter(l => MONEY_IN.includes(l.type)).reduce((s, l) => s + Number(l.amount), 0);
@@ -86,7 +122,7 @@ export async function POST(request: Request) {
     productSales[pid].revenue += Number(l.amount);
   }
   const topSellers = Object.values(productSales).sort((a, b) => b.revenue - a.revenue).slice(0, 8);
-  const slowStock  = products.filter(p => p.is_active && p.item_type !== "rent" && !productSales[p.id] && p.quantity > 0);
+  const slowStock  = products.filter(p => p.is_active && p.item_type !== "for_rent" && !productSales[p.id] && p.quantity > 0);
 
   // ── Expense breakdown ────────────────────────────────────────────
   const expenseByNote: Record<string, number> = {};
@@ -108,7 +144,7 @@ export async function POST(request: Request) {
     : 0;
 
   // ── Low stock ────────────────────────────────────────────────────
-  const lowStock = products.filter(p => p.is_active && p.item_type !== "rent" && p.quantity <= p.low_stock_threshold);
+  const lowStock = products.filter(p => p.is_active && p.item_type !== "for_rent" && p.quantity <= p.low_stock_threshold);
 
   // ── Category performance ─────────────────────────────────────────
   const categoryStats: Record<string, { revenue: number; units: number; profit: number }> = {};
@@ -128,7 +164,7 @@ export async function POST(request: Request) {
 
   // ── Overdue rentals ──────────────────────────────────────────────
   const today = new Date().toISOString().split("T")[0];
-  const overdueRentals = rentals.filter(r => !r.returned && r.expected_return_date < today);
+  const overdueRentals = rentals.filter(r => !r.returned && !!r.expected_return_date && r.expected_return_date < today);
   const overdueIncome  = overdueRentals.reduce((s, r) => s + Number(r.rental_fee), 0);
 
   // ── Total withdrawn ──────────────────────────────────────────────

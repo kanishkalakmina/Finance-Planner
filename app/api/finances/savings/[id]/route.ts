@@ -13,8 +13,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const update: Record<string, unknown> = { date, note: note ?? null };
   if (amount !== undefined) update.amount = Number(amount);
 
-  const { data, error } = await supabase
-    .from("savings_transactions")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from("savings_transactions") as any)
     .update(update)
     .eq("id", id)
     .eq("user_id", user.id)
