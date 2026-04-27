@@ -9,10 +9,10 @@ interface Log { id: string; amount: number; date: string; note: string | null; }
 export default function SettingsPage() {
   const today = new Date().toISOString().split("T")[0];
 
-  const [capital, setCapital]           = useState("");
+  const [capital, setCapital]             = useState("");
   const [capitalLocked, setCapitalLocked] = useState(false);
-  const [capSaving, setCapSaving]       = useState(false);
-  const [capSaved, setCapSaved]         = useState(false);
+  const [capSaving, setCapSaving]         = useState(false);
+  const [capSaved, setCapSaved]           = useState(false);
 
   const [addAmount, setAddAmount] = useState("");
   const [addDate, setAddDate]     = useState(today);
@@ -74,8 +74,8 @@ export default function SettingsPage() {
   if (loading) return <div className="text-gray-400 text-sm p-4">Loading…</div>;
 
   return (
-    <div className="max-w-lg mx-auto space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
+    <div className="max-w-lg mx-auto space-y-5">
+      <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Settings</h2>
 
       {error && <div className="bg-red-50 text-red-700 text-sm rounded-lg px-4 py-3">{error}</div>}
 
@@ -95,7 +95,7 @@ export default function SettingsPage() {
               </div>
               <span>🔒</span>
             </div>
-            <p className="text-xs text-gray-400">Use <strong>Add Funds</strong> below to inject more money into the shop.</p>
+            <p className="text-xs text-gray-400">Use <strong>Add Funds</strong> below to inject more money.</p>
           </div>
         ) : (
           <form onSubmit={saveCapital} className="space-y-3">
@@ -109,7 +109,7 @@ export default function SettingsPage() {
               <p className="text-xs text-yellow-700">⚠️ Set this once. It cannot be changed after saving.</p>
             </div>
             {capSaved && <p className="text-sm text-green-600 font-medium">Saved and locked.</p>}
-            <button type="submit" className="btn-primary text-sm" disabled={capSaving}>
+            <button type="submit" className="btn-primary" disabled={capSaving}>
               {capSaving ? "Saving…" : "Save & Lock"}
             </button>
           </form>
@@ -120,7 +120,7 @@ export default function SettingsPage() {
       <section className="card space-y-4">
         <div>
           <h3 className="font-semibold text-gray-800">Add Funds to Shop</h3>
-          <p className="text-xs text-gray-400 mt-0.5">Owner deposits, loans received, etc. Increases shop balance.</p>
+          <p className="text-xs text-gray-400 mt-0.5">Owner deposits, loans received, etc. Increases balance.</p>
         </div>
 
         {addError && <div className="bg-red-50 text-red-700 text-sm rounded-lg px-3 py-2">{addError}</div>}
@@ -143,11 +143,11 @@ export default function SettingsPage() {
           </div>
           {addAmount && (
             <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-2 flex justify-between items-center">
-              <span className="text-sm text-green-700">Will add to shop balance</span>
+              <span className="text-sm text-green-700">Will add to balance</span>
               <span className="font-bold text-green-700">+ LKR {fmt(Number(addAmount))}</span>
             </div>
           )}
-          <button type="submit" className="btn-primary text-sm" disabled={addSaving}>
+          <button type="submit" className="btn-primary" disabled={addSaving}>
             {addSaving ? "Adding…" : "Add Funds"}
           </button>
         </form>
@@ -167,7 +167,7 @@ export default function SettingsPage() {
                   </div>
                   {e.note && <p className="text-xs text-gray-500 truncate">{e.note}</p>}
                 </div>
-                <button onClick={() => deleteEntry(e.id)} className="text-xs text-red-400 hover:text-red-600 flex-shrink-0">✕</button>
+                <button onClick={() => deleteEntry(e.id)} className="text-xs text-red-400 hover:text-red-600 flex-shrink-0 p-1">✕</button>
               </div>
             ))}
           </div>
@@ -236,7 +236,7 @@ function ExpenseSection() {
             <span className="font-bold text-red-700">− LKR {Number(form.amount).toLocaleString("en-LK", {minimumFractionDigits:2})}</span>
           </div>
         )}
-        <button type="submit" className="btn-primary text-sm" disabled={saving}>{saving ? "Saving…" : "Record Expense"}</button>
+        <button type="submit" className="btn-primary" disabled={saving}>{saving ? "Saving…" : "Record Expense"}</button>
       </form>
     </section>
   );

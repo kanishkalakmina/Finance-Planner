@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import StatCard from "@/components/ui/StatCard";
 
 function fmt(n: number) { return n.toLocaleString("en-LK", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function currentMonth() {
@@ -48,7 +49,7 @@ export default function HistoryPage() {
   const [sales, setSales]     = useState<SaleLog[]>([]);
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [loading, setLoading] = useState(true);
-  const [salesPage, setSalesPage]   = useState(1);
+  const [salesPage, setSalesPage]     = useState(1);
   const [rentalsPage, setRentalsPage] = useState(1);
 
   const load = useCallback(async (m: string) => {
@@ -81,33 +82,22 @@ export default function HistoryPage() {
   if (loading) return <div className="text-gray-400 text-sm p-4">Loading…</div>;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5">
+    <div className="max-w-2xl mx-auto space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="flex items-start justify-between flex-wrap gap-2">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">History</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">History</h2>
           <p className="text-xs text-gray-400 mt-0.5">Sales and rental records</p>
         </div>
-        <div className="flex items-center gap-2">
-          <input type="month" className="input py-1 text-sm w-36" value={month}
-            onChange={e => { setMonth(e.target.value); load(e.target.value); }} />
-        </div>
+        <input type="month" className="input py-1 text-sm w-32" value={month}
+          onChange={e => { setMonth(e.target.value); load(e.target.value); }} />
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="card text-center">
-          <p className="text-xs text-gray-400">Sales Revenue</p>
-          <p className="text-lg font-bold text-green-600">LKR {fmt(monthRevenue)}</p>
-        </div>
-        <div className="card text-center">
-          <p className="text-xs text-gray-400">Units Sold</p>
-          <p className="text-lg font-bold text-gray-800">{monthUnits}</p>
-        </div>
-        <div className="card text-center">
-          <p className="text-xs text-gray-400">Rental Income</p>
-          <p className="text-lg font-bold text-purple-600">LKR {fmt(rentalIncome)}</p>
-        </div>
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <StatCard label="Sales Revenue" value={`LKR ${fmt(monthRevenue)}`} color="green" />
+        <StatCard label="Units Sold" value={String(monthUnits)} color="gray" />
+        <StatCard label="Rental Income" value={`LKR ${fmt(rentalIncome)}`} color="purple" />
       </div>
 
       {/* Tab toggle */}
@@ -136,20 +126,20 @@ export default function HistoryPage() {
                 {pagedSales.map(s => {
                   const icon = CAT_ICON[s.products?.category ?? "other"] ?? "📦";
                   return (
-                    <div key={s.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
-                      <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center text-base flex-shrink-0">
+                    <div key={s.id} className="flex items-center gap-3 px-4 py-3">
+                      <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-base flex-shrink-0">
                         {icon}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-800">{s.products?.name ?? "Product"}</p>
+                        <p className="text-sm font-semibold text-gray-800 truncate">{s.products?.name ?? "Product"}</p>
                         <p className="text-xs text-gray-400">
                           {s.date} · {s.qty ?? 0} unit{(s.qty ?? 0) !== 1 ? "s" : ""}
-                          {s.unit_price ? ` @ LKR ${fmt(s.unit_price)}` : ""}
+                          {s.unit_price ? ` @ ${fmt(s.unit_price)}` : ""}
                           {s.note ? ` · ${s.note}` : ""}
                         </p>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="text-sm font-bold text-green-600">+ LKR {fmt(s.amount)}</p>
+                        <p className="text-sm font-bold text-green-600">+{fmt(s.amount)}</p>
                       </div>
                     </div>
                   );
@@ -176,27 +166,27 @@ export default function HistoryPage() {
                   const icon = CAT_ICON[r.products?.category ?? "rental"] ?? "🔁";
                   const overdue = !r.returned && new Date(r.expected_return_date) < new Date();
                   return (
-                    <div key={r.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-base flex-shrink-0 ${r.returned ? "bg-green-100" : overdue ? "bg-red-100" : "bg-purple-100"}`}>
+                    <div key={r.id} className="flex items-center gap-3 px-4 py-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-base flex-shrink-0 ${r.returned ? "bg-green-100" : overdue ? "bg-red-100" : "bg-purple-100"}`}>
                         {icon}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-semibold text-gray-800">{r.products?.name ?? "Item"} × {r.quantity}</p>
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${r.returned ? "bg-green-100 text-green-700" : overdue ? "bg-red-100 text-red-600" : "bg-purple-100 text-purple-700"}`}>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-sm font-semibold text-gray-800 truncate">{r.products?.name ?? "Item"} × {r.quantity}</p>
+                          <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${r.returned ? "bg-green-100 text-green-700" : overdue ? "bg-red-100 text-red-600" : "bg-purple-100 text-purple-700"}`}>
                             {r.returned ? "Returned" : overdue ? "Overdue" : "Out"}
                           </span>
                         </div>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-gray-400 truncate">
                           {r.rent_date} → {r.actual_return_date ?? r.expected_return_date}
                           {r.customer_name ? ` · ${r.customer_name}` : ""}
                         </p>
                       </div>
                       <div className="text-right flex-shrink-0">
                         {r.returned ? (
-                          <p className="text-sm font-bold text-green-600">+ LKR {fmt(r.fee_collected ?? r.rental_fee)}</p>
+                          <p className="text-sm font-bold text-green-600">+{fmt(r.fee_collected ?? r.rental_fee)}</p>
                         ) : (
-                          <p className="text-sm font-medium text-gray-500">LKR {fmt(r.rental_fee)}</p>
+                          <p className="text-sm font-medium text-gray-500">{fmt(r.rental_fee)}</p>
                         )}
                       </div>
                     </div>

@@ -18,7 +18,7 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-56 min-h-screen bg-white border-r border-gray-200 flex flex-col">
+    <aside className="hidden md:flex w-56 min-h-screen bg-white border-r border-gray-200 flex-col">
       <div className="p-5 border-b border-gray-100">
         <h1 className="font-bold text-gray-900 text-sm leading-tight">
           Business<br />Manager
@@ -43,7 +43,7 @@ export default function Sidebar() {
           );
         })}
       </nav>
-      <div className="p-3 border-t border-gray-100">
+      <div className="p-3 border-t border-gray-100 space-y-1">
         <form action="/api/auth/logout" method="POST">
           <button
             type="submit"
@@ -52,6 +52,7 @@ export default function Sidebar() {
             <span>🚪</span> Sign Out
           </button>
         </form>
+        <p className="text-xs text-gray-300 px-3">v{process.env.NEXT_PUBLIC_APP_VERSION ?? "—"}</p>
       </div>
     </aside>
   );

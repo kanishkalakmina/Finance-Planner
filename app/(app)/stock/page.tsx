@@ -101,7 +101,7 @@ export default function StockPage() {
     });
     const d = await res.json(); setRSaving(false);
     if (!res.ok) { setError(d.error); return; }
-    setRSuccess(`Restocked ${rForm.qty} units. LKR ${fmt(cost)} deducted from balance.`);
+    setRSuccess(`Restocked ${rForm.qty} units. LKR ${fmt(cost)} deducted.`);
     setRForm({ product_id:"", qty:"1", cost_per_unit:"", date:today, note:"" });
     await load();
   }
@@ -111,13 +111,15 @@ export default function StockPage() {
   if (loading) return <div className="text-gray-400 text-sm p-4">Loading…</div>;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h2 className="text-2xl font-bold text-gray-900">Stock</h2>
-        <div className="flex gap-2">
+    <div className="max-w-2xl mx-auto space-y-4">
+      {/* Header */}
+      <div className="space-y-2">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Stock</h2>
+        {/* Tabs */}
+        <div className="flex gap-2 overflow-x-auto pb-0.5">
           {([["catalog","📦 Catalog"],["restock","🔄 Restock"],["remove","↩️ Remove"]] as const).map(([t, label]) => (
             <button key={t} onClick={() => setTab(t)}
-              className={`text-sm px-4 py-1.5 rounded-full font-medium border transition-colors ${tab === t ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
+              className={`text-sm px-4 py-1.5 rounded-full font-medium border whitespace-nowrap transition-colors flex-shrink-0 ${tab === t ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
               {label}
             </button>
           ))}
@@ -128,10 +130,10 @@ export default function StockPage() {
 
       {/* CATALOG TAB */}
       {tab === "catalog" && (
-        <div className="space-y-4">
-          <div className="flex gap-3">
+        <div className="space-y-3">
+          <div className="flex gap-2">
             <input type="text" className="input flex-1" placeholder="Search products…" value={search} onChange={e => setSearch(e.target.value)} />
-            <button onClick={() => setShowAdd(!showAdd)} className="btn-primary text-sm">+ Add Product</button>
+            <button onClick={() => setShowAdd(!showAdd)} className="btn-primary whitespace-nowrap">+ Add</button>
           </div>
 
           {showAdd && (
@@ -180,8 +182,8 @@ export default function StockPage() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <button type="submit" className="btn-primary text-sm" disabled={pSaving}>{pSaving ? "Saving…" : "Add Product"}</button>
-                <button type="button" onClick={() => setShowAdd(false)} className="btn-secondary text-sm">Cancel</button>
+                <button type="submit" className="btn-primary" disabled={pSaving}>{pSaving ? "Saving…" : "Add Product"}</button>
+                <button type="button" onClick={() => setShowAdd(false)} className="btn-secondary">Cancel</button>
               </div>
             </form>
           )}
@@ -197,17 +199,17 @@ export default function StockPage() {
                 <div key={p.id} className="flex items-center gap-3 px-4 py-3">
                   <span className="text-2xl flex-shrink-0">{CAT_ICON[p.category] ?? "📦"}</span>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="font-semibold text-gray-800 text-sm">{p.name}</span>
-                      <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full">{TYPE_LABEL[p.item_type]}</span>
+                      <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded-full">{TYPE_LABEL[p.item_type]}</span>
                       {p.quantity <= p.low_stock_threshold && p.item_type !== "rent" && (
-                        <span className="text-xs px-2 py-0.5 bg-orange-100 text-orange-600 rounded-full">Low stock</span>
+                        <span className="text-xs px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-full">Low</span>
                       )}
                     </div>
-                    <div className="flex gap-3 mt-0.5 text-xs text-gray-400">
-                      <span>Buy: LKR {fmt(p.buy_price)}</span>
-                      {p.sell_price && <span>Sell: LKR {fmt(p.sell_price)}</span>}
-                      {p.rental_price && <span>Rent: LKR {fmt(p.rental_price)}</span>}
+                    <div className="flex gap-2 mt-0.5 text-xs text-gray-400 flex-wrap">
+                      <span>Buy: {fmt(p.buy_price)}</span>
+                      {p.sell_price && <span>Sell: {fmt(p.sell_price)}</span>}
+                      {p.rental_price && <span>Rent: {fmt(p.rental_price)}</span>}
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
@@ -226,7 +228,7 @@ export default function StockPage() {
         <div className="card space-y-4">
           <div>
             <h3 className="font-semibold text-gray-800">↩️ Remove Stock</h3>
-            <p className="text-xs text-gray-400 mt-0.5">Return stock to supplier or remove items. Refund amount is added back to shop balance.</p>
+            <p className="text-xs text-gray-400 mt-0.5">Return stock to supplier. Refund added back to balance.</p>
           </div>
 
           {rmSuccess && <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-3">{rmSuccess}</div>}
@@ -247,11 +249,11 @@ export default function StockPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="label">Quantity to Remove</label>
+                  <label className="label">Qty to Remove</label>
                   <input type="number" min="1" step="1" className="input" required value={rmForm.qty} onChange={e => setRmForm(f => ({...f, qty:e.target.value}))} />
                 </div>
                 <div>
-                  <label className="label">Refund per Unit (LKR)</label>
+                  <label className="label">Refund / Unit (LKR)</label>
                   <input type="number" min="0" step="0.01" className="input" required value={rmForm.refund_per_unit} onChange={e => setRmForm(f => ({...f, refund_per_unit:e.target.value}))} />
                 </div>
                 <div>
@@ -279,8 +281,8 @@ export default function StockPage() {
       {tab === "restock" && (
         <div className="card space-y-4">
           <div>
-            <h3 className="font-semibold text-gray-800">Restock Products</h3>
-            <p className="text-xs text-gray-400 mt-0.5">Cost will be automatically deducted from shop balance.</p>
+            <h3 className="font-semibold text-gray-800">🔄 Restock Products</h3>
+            <p className="text-xs text-gray-400 mt-0.5">Cost deducted automatically from shop balance.</p>
           </div>
 
           {rSuccess && <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-3">{rSuccess}</div>}
@@ -305,7 +307,7 @@ export default function StockPage() {
                   <input type="number" min="1" step="1" className="input" required value={rForm.qty} onChange={e => setRForm(f => ({...f, qty:e.target.value}))} />
                 </div>
                 <div>
-                  <label className="label">Cost per Unit (LKR)</label>
+                  <label className="label">Cost / Unit (LKR)</label>
                   <input type="number" min="0.01" step="0.01" className="input" required value={rForm.cost_per_unit} onChange={e => setRForm(f => ({...f, cost_per_unit:e.target.value}))} />
                 </div>
                 <div>

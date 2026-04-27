@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import StatCard from "@/components/ui/StatCard";
 
 function fmt(n: number) { return n.toLocaleString("en-LK", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function currentMonth() {
@@ -73,36 +74,25 @@ export default function TransactionsPage() {
   if (loading) return <div className="text-gray-400 text-sm p-6">Loading…</div>;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+    <div className="max-w-2xl mx-auto space-y-4">
+      <div className="flex items-start justify-between flex-wrap gap-2">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Transactions</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Transactions</h2>
           <p className="text-xs text-gray-400 mt-0.5">Every record in one place</p>
         </div>
-        <input type="month" className="input py-1 text-sm w-36" value={month}
+        <input type="month" className="input py-1 text-sm w-32" value={month}
           onChange={e => { setMonth(e.target.value); load(e.target.value); }} />
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="card text-center">
-          <p className="text-xs text-gray-400">Money In</p>
-          <p className="text-lg font-bold text-green-600">LKR {fmt(totalIn)}</p>
-        </div>
-        <div className="card text-center">
-          <p className="text-xs text-gray-400">Money Out</p>
-          <p className="text-lg font-bold text-red-500">LKR {fmt(totalOut)}</p>
-        </div>
-        <div className="card text-center">
-          <p className="text-xs text-gray-400">Net</p>
-          <p className={`text-lg font-bold ${totalIn - totalOut >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-            LKR {fmt(totalIn - totalOut)}
-          </p>
-        </div>
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <StatCard label="Money In" value={`LKR ${fmt(totalIn)}`} color="green" />
+        <StatCard label="Money Out" value={`LKR ${fmt(totalOut)}`} color="red" />
+        <StatCard label="Net" value={`LKR ${fmt(totalIn - totalOut)}`} color={totalIn - totalOut >= 0 ? "emerald" : "red"} />
       </div>
 
       {/* Filters */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-1.5 flex-wrap">
         {([
           ["all",          `All (${logs.length})`],
           ["sale",         `🛒 Sales`],
@@ -114,7 +104,7 @@ export default function TransactionsPage() {
           ["withdrawal",   `🏧 Withdrawals`],
         ] as [Filter, string][]).map(([f, label]) => (
           <button key={f} onClick={() => { setFilter(f); setPage(1); }}
-            className={`text-xs px-3 py-1.5 rounded-full font-medium border transition-colors ${filter === f ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
+            className={`text-xs px-2.5 py-1 rounded-full font-medium border transition-colors ${filter === f ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
             {label}
           </button>
         ))}
@@ -132,24 +122,24 @@ export default function TransactionsPage() {
             {pagedVisible.map(log => {
               const m = META[log.type] ?? { icon:"📎", label:log.type, in:false, out:false };
               return (
-                <div key={log.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-base flex-shrink-0 ${m.in ? "bg-green-100" : m.out ? "bg-red-100" : "bg-gray-100"}`}>
+                <div key={log.id} className="flex items-center gap-3 px-4 py-3">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${m.in ? "bg-green-100" : m.out ? "bg-red-100" : "bg-gray-100"}`}>
                     {m.icon}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800">
+                    <p className="text-sm font-semibold text-gray-800 truncate">
                       {m.label}{log.products?.name ? ` — ${log.products.name}` : ""}
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-400 truncate">
                       {log.date}
                       {log.qty ? ` · ${log.qty} units` : ""}
-                      {log.unit_price ? ` @ LKR ${fmt(log.unit_price)}` : ""}
+                      {log.unit_price ? ` @ ${fmt(log.unit_price)}` : ""}
                       {log.note ? ` · ${log.note}` : ""}
                     </p>
                   </div>
                   {log.amount > 0 && (
                     <span className={`text-sm font-bold flex-shrink-0 ${m.in ? "text-green-600" : m.out ? "text-red-500" : "text-gray-500"}`}>
-                      {m.in ? "+" : m.out ? "−" : "·"} LKR {fmt(log.amount)}
+                      {m.in ? "+" : m.out ? "−" : "·"}{fmt(log.amount)}
                     </span>
                   )}
                 </div>

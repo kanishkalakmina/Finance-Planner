@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from "recharts";
+import StatCard from "@/components/ui/StatCard";
 
 function fmt(n: number) { return n.toLocaleString("en-LK", { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
 function fmt2(n: number) { return n.toLocaleString("en-LK", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
@@ -172,32 +173,29 @@ export default function DashboardPage() {
     : "0";
 
   return (
-    <div className="w-full space-y-5">
+    <div className="w-full space-y-4">
 
-      {/* ── Full-width Header ── */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
-        <div className="flex items-center gap-3">
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors ${
-            aiStatus === "online"  ? "bg-green-50 border-green-200 text-green-700" :
-            aiStatus === "offline" ? "bg-red-50 border-red-200 text-red-600" :
-                                     "bg-yellow-50 border-yellow-200 text-yellow-600"
-          }`}>
-            <span className="text-base">🤖</span>
-            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-              aiStatus === "online"  ? "bg-green-500" :
-              aiStatus === "offline" ? "bg-red-500" :
-                                       "bg-yellow-400 animate-pulse"
-            }`} />
-            <span>
-              {aiStatus === "checking" ? "Checking AI…" :
-               aiStatus === "online"   ? `AI Online${aiLatency ? ` · ${aiLatency}ms` : ""}` :
-                                         "AI Offline"}
-            </span>
-          </div>
-          <input type="month" className="input py-1 text-sm w-36" value={month}
-            onChange={e => { setMonth(e.target.value); load(e.target.value); }} />
+      {/* Header */}
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex-1 min-w-0">Dashboard</h2>
+        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-semibold ${
+          aiStatus === "online"  ? "bg-green-50 border-green-200 text-green-700" :
+          aiStatus === "offline" ? "bg-red-50 border-red-200 text-red-600" :
+                                   "bg-yellow-50 border-yellow-200 text-yellow-600"
+        }`}>
+          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+            aiStatus === "online"  ? "bg-green-500" :
+            aiStatus === "offline" ? "bg-red-500" :
+                                     "bg-yellow-400 animate-pulse"
+          }`} />
+          <span>
+            {aiStatus === "checking" ? "Checking AI…" :
+             aiStatus === "online"   ? `AI${aiLatency ? ` ${aiLatency}ms` : ""}` :
+                                       "AI Offline"}
+          </span>
         </div>
+        <input type="month" className="input py-1 text-sm w-32" value={month}
+          onChange={e => { setMonth(e.target.value); load(e.target.value); }} />
       </div>
 
       {wdDone && (
@@ -206,32 +204,32 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ── Two-Column Grid ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 items-start">
+      {/* Two-column grid — stacks on mobile */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
 
-        {/* ══ LEFT COLUMN (3/5) — Financial Overview ══ */}
-        <div className="lg:col-span-3 space-y-5">
+        {/* LEFT COLUMN */}
+        <div className="lg:col-span-3 space-y-4">
 
           {/* Shop Balance */}
           <div className="card bg-gray-900 text-white">
-            <div className="flex items-start justify-between flex-wrap gap-4">
-              <div>
-                <p className="text-sm text-gray-400 mb-1">Shop Balance</p>
-                <p className="text-4xl font-bold tracking-tight">LKR {fmt(data.shop_balance)}</p>
-                <div className="flex gap-4 mt-3 text-xs text-gray-400 flex-wrap">
-                  <span>Starting: <span className="text-gray-200 font-semibold">LKR {fmt(data.initial_savings)}</span></span>
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="min-w-0">
+                <p className="text-xs text-gray-400 mb-1">Shop Balance</p>
+                <p className="text-3xl sm:text-4xl font-bold tracking-tight">LKR {fmt(data.shop_balance)}</p>
+                <div className="flex gap-3 mt-2 text-xs text-gray-400 flex-wrap">
+                  <span>Start: <span className="text-gray-200 font-semibold">LKR {fmt(data.initial_savings)}</span></span>
                   {data.total_capital_added > 0 && (
                     <span>Added: <span className="text-green-400 font-semibold">LKR {fmt(data.total_capital_added)}</span></span>
                   )}
                   <span>Stock: <span className="text-blue-300 font-semibold">LKR {fmt(data.total_stock_value)}</span></span>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Total invested: LKR {fmt(data.total_capital_invested)} · ROI: <span className={Number(roi) >= 0 ? "text-green-400" : "text-red-400"}>{roi}%</span>
+                  Invested: LKR {fmt(data.total_capital_invested)} · ROI: <span className={Number(roi) >= 0 ? "text-green-400" : "text-red-400"}>{roi}%</span>
                 </p>
               </div>
-              <div className="text-right">
+              <div className="text-right flex-shrink-0">
                 <p className="text-xs text-gray-500">Safe to withdraw</p>
-                <p className={`text-xl font-bold ${data.safe_withdrawal > 0 ? "text-green-400" : "text-red-400"}`}>
+                <p className={`text-lg sm:text-xl font-bold ${data.safe_withdrawal > 0 ? "text-green-400" : "text-red-400"}`}>
                   LKR {fmt(data.safe_withdrawal)}
                 </p>
                 <p className="text-xs text-gray-600 mt-0.5">3-month buffer</p>
@@ -240,47 +238,33 @@ export default function DashboardPage() {
           </div>
 
           {/* Monthly P&L */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="card text-center">
-              <p className="text-xs text-gray-400">Money In</p>
-              <p className="text-xl font-bold text-green-600">LKR {fmt(data.month_in)}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{month}</p>
-            </div>
-            <div className="card text-center">
-              <p className="text-xs text-gray-400">Money Out</p>
-              <p className="text-xl font-bold text-red-500">LKR {fmt(data.month_out)}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{month}</p>
-            </div>
-            <div className="card text-center">
-              <p className="text-xs text-gray-400">Net Profit</p>
-              <p className={`text-xl font-bold ${data.net_profit >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                LKR {fmt(data.net_profit)}
-              </p>
-              <p className="text-xs text-gray-400 mt-0.5">{month}</p>
-            </div>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <StatCard label="Money In" value={`LKR ${fmt(data.month_in)}`} color="green" subtitle={month} />
+            <StatCard label="Money Out" value={`LKR ${fmt(data.month_out)}`} color="red" subtitle={month} />
+            <StatCard label="Net Profit" value={`LKR ${fmt(data.net_profit)}`} color={data.net_profit >= 0 ? "emerald" : "red"} subtitle={month} />
           </div>
 
-          {/* 6-Month Trend + Monthly Table */}
+          {/* 6-Month Trend */}
           {data.trend.some(t => t.income > 0 || t.expenses > 0) && (
             <div className="card space-y-4">
               <p className="text-sm font-semibold text-gray-700">6-Month Trend</p>
-              <ResponsiveContainer width="100%" height={180}>
+              <ResponsiveContainer width="100%" height={160}>
                 <LineChart data={trendData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#6b7280" }} axisLine={false} tickLine={false} />
-                  <YAxis tickFormatter={fmtK} tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} width={40} />
-                  <Tooltip formatter={(v: number) => `LKR ${fmt2(v)}`} labelStyle={{ color: "#374151", fontWeight: 600 }} contentStyle={{ borderRadius: 12, border: "1px solid #e5e7eb", fontSize: 12 }} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Line type="monotone" dataKey="income" name="Income" stroke="#10b981" strokeWidth={2.5} dot={{ r: 4, fill: "#10b981" }} activeDot={{ r: 6 }} />
-                  <Line type="monotone" dataKey="expenses" name="Expenses" stroke="#f87171" strokeWidth={2.5} dot={{ r: 4, fill: "#f87171" }} activeDot={{ r: 6 }} />
-                  <Line type="monotone" dataKey="net" name="Net Profit" stroke="#6366f1" strokeWidth={2} strokeDasharray="5 3" dot={{ r: 3, fill: "#6366f1" }} activeDot={{ r: 5 }} />
+                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#6b7280" }} axisLine={false} tickLine={false} />
+                  <YAxis tickFormatter={fmtK} tick={{ fontSize: 9, fill: "#9ca3af" }} axisLine={false} tickLine={false} width={36} />
+                  <Tooltip formatter={(v: number) => `LKR ${fmt2(v)}`} labelStyle={{ color: "#374151", fontWeight: 600 }} contentStyle={{ borderRadius: 12, border: "1px solid #e5e7eb", fontSize: 11 }} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Line type="monotone" dataKey="income" name="Income" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3, fill: "#10b981" }} activeDot={{ r: 5 }} />
+                  <Line type="monotone" dataKey="expenses" name="Expenses" stroke="#f87171" strokeWidth={2.5} dot={{ r: 3, fill: "#f87171" }} activeDot={{ r: 5 }} />
+                  <Line type="monotone" dataKey="net" name="Net" stroke="#6366f1" strokeWidth={2} strokeDasharray="5 3" dot={{ r: 2, fill: "#6366f1" }} activeDot={{ r: 4 }} />
                 </LineChart>
               </ResponsiveContainer>
 
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Monthly Profit</p>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Monthly Breakdown</p>
+                <div className="overflow-x-auto -mx-1">
+                  <table className="w-full text-xs min-w-[280px]">
                     <thead>
                       <tr className="text-gray-400">
                         <th className="text-left pb-1">Month</th>
@@ -293,8 +277,8 @@ export default function DashboardPage() {
                       {[...data.trend].reverse().map(t => (
                         <tr key={t.month} className={t.month === month ? "bg-blue-50" : ""}>
                           <td className="py-1.5 font-medium text-gray-700">{t.month}</td>
-                          <td className="py-1.5 text-right text-green-600">LKR {fmt(t.income)}</td>
-                          <td className="py-1.5 text-right text-red-500">LKR {fmt(t.expenses)}</td>
+                          <td className="py-1.5 text-right text-green-600">{fmt(t.income)}</td>
+                          <td className="py-1.5 text-right text-red-500">{fmt(t.expenses)}</td>
                           <td className={`py-1.5 text-right font-semibold ${t.net >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                             {t.net >= 0 ? "+" : ""}LKR {fmt(t.net)}
                           </td>
@@ -317,15 +301,15 @@ export default function DashboardPage() {
                   const pct = maxUnits > 0 ? Math.round((item.units / maxUnits) * 100) : 0;
                   return (
                     <div key={item.name}>
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                          <span>{CAT_ICON[item.category] ?? "📦"}</span>
-                          <span className="text-sm font-medium text-gray-800">{item.name}</span>
-                          {i === 0 && <span className="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full font-medium">Best Seller</span>}
+                      <div className="flex items-center justify-between mb-1 gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="flex-shrink-0">{CAT_ICON[item.category] ?? "📦"}</span>
+                          <span className="text-sm font-medium text-gray-800 truncate">{item.name}</span>
+                          {i === 0 && <span className="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full font-medium flex-shrink-0">Best</span>}
                         </div>
-                        <div className="text-right">
-                          <span className="text-sm font-semibold text-gray-700">{item.units} units</span>
-                          <span className="text-xs text-gray-400 ml-2">LKR {fmt(item.revenue)}</span>
+                        <div className="text-right flex-shrink-0">
+                          <span className="text-sm font-semibold text-gray-700">{item.units}</span>
+                          <span className="text-xs text-gray-400 ml-1">{fmt(item.revenue)}</span>
                         </div>
                       </div>
                       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -342,7 +326,7 @@ export default function DashboardPage() {
           <div className="card space-y-3">
             <div>
               <p className="text-sm font-semibold text-gray-700">💸 Withdrawal Analyzer</p>
-              <p className="text-xs text-gray-400 mt-0.5">Enter an amount to check if it&apos;s safe to withdraw</p>
+              <p className="text-xs text-gray-400 mt-0.5">Check if it&apos;s safe to withdraw</p>
             </div>
 
             <div className="flex gap-2">
@@ -358,7 +342,7 @@ export default function DashboardPage() {
               </div>
               <button onClick={checkWithdrawal} disabled={wdChecking || !wdAmt}
                 className="px-4 py-2 bg-gray-900 text-white text-sm rounded-lg font-medium hover:bg-gray-700 disabled:opacity-40 transition-colors">
-                {wdChecking ? "Analyzing…" : "Check"}
+                {wdChecking ? "…" : "Check"}
               </button>
             </div>
 
@@ -370,13 +354,13 @@ export default function DashboardPage() {
             )}
 
             {wdResult && !wdChecking && (
-              <div className={`rounded-xl border p-4 space-y-3 ${
+              <div className={`rounded-xl border p-3 space-y-3 ${
                 wdResult.verdict === "safe"  ? "bg-green-50 border-green-200" :
                 wdResult.verdict === "risky" ? "bg-yellow-50 border-yellow-200" :
                                                "bg-red-50 border-red-200"
               }`}>
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">{wdResult.verdict === "safe" ? "✅" : wdResult.verdict === "risky" ? "⚠️" : "❌"}</span>
+                  <span className="text-lg">{wdResult.verdict === "safe" ? "✅" : wdResult.verdict === "risky" ? "⚠️" : "❌"}</span>
                   <span className={`text-sm font-bold ${
                     wdResult.verdict === "safe" ? "text-green-700" : wdResult.verdict === "risky" ? "text-yellow-700" : "text-red-700"
                   }`}>
@@ -386,23 +370,23 @@ export default function DashboardPage() {
 
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="bg-white/70 rounded-lg px-3 py-2">
-                    <p className="text-gray-400">Balance Before</p>
+                    <p className="text-gray-400">Before</p>
                     <p className="font-bold text-gray-800">LKR {fmt(wdResult.balance_before)}</p>
                   </div>
                   <div className="bg-white/70 rounded-lg px-3 py-2">
-                    <p className="text-gray-400">Balance After</p>
+                    <p className="text-gray-400">After</p>
                     <p className={`font-bold ${wdResult.balance_after >= 0 ? "text-gray-800" : "text-red-600"}`}>
                       LKR {fmt(wdResult.balance_after)}
                     </p>
                   </div>
                   <div className="bg-white/70 rounded-lg px-3 py-2">
-                    <p className="text-gray-400">Months Covered</p>
+                    <p className="text-gray-400">Buffer</p>
                     <p className={`font-bold ${wdResult.months_buffer_remaining >= 3 ? "text-green-700" : wdResult.months_buffer_remaining >= 1 ? "text-yellow-700" : "text-red-600"}`}>
                       {wdResult.months_buffer_remaining} months
                     </p>
                   </div>
                   <div className="bg-white/70 rounded-lg px-3 py-2">
-                    <p className="text-gray-400">Avg Monthly Exp</p>
+                    <p className="text-gray-400">Avg Exp</p>
                     <p className="font-bold text-gray-800">LKR {fmt(wdResult.avg_monthly_expenses)}</p>
                   </div>
                 </div>
@@ -412,7 +396,7 @@ export default function DashboardPage() {
 
                 {wdResult.return_advice && (
                   <div className="bg-white/70 rounded-lg px-3 py-2 border border-white">
-                    <p className="text-xs font-semibold text-gray-600 mb-0.5">🔄 When to Return This Money</p>
+                    <p className="text-xs font-semibold text-gray-600 mb-0.5">🔄 When to Return</p>
                     <p className="text-xs text-gray-700 leading-relaxed">{wdResult.return_advice}</p>
                   </div>
                 )}
@@ -422,7 +406,7 @@ export default function DashboardPage() {
                     <input type="text" placeholder="Note (optional)" className="input text-sm w-full"
                       value={wdNote} onChange={e => setWdNote(e.target.value)} />
                     <button onClick={confirmWithdraw} disabled={wdDoing}
-                      className={`w-full text-sm font-semibold py-2 rounded-lg text-white transition-colors disabled:opacity-50 ${
+                      className={`w-full text-sm font-semibold py-2.5 rounded-lg text-white transition-colors disabled:opacity-50 ${
                         wdResult.verdict === "safe" ? "bg-green-600 hover:bg-green-700" : "bg-yellow-600 hover:bg-yellow-700"
                       }`}>
                       {wdDoing ? "Processing…" : `Confirm Withdraw LKR ${fmt(wdResult.withdraw_amount)}`}
@@ -434,10 +418,10 @@ export default function DashboardPage() {
           </div>
 
         </div>
-        {/* ── END LEFT COLUMN ── */}
+        {/* END LEFT COLUMN */}
 
-        {/* ══ RIGHT COLUMN (2/5) — Activity & Insights ══ */}
-        <div className="lg:col-span-2 space-y-5">
+        {/* RIGHT COLUMN */}
+        <div className="lg:col-span-2 space-y-4">
 
           {/* AI Business Insights */}
           <div className="card space-y-3">
@@ -478,7 +462,6 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* Follow-up */}
                 <div className="border-t border-gray-100 pt-3 space-y-2">
                   <p className="text-xs font-semibold text-gray-500">Ask a Question</p>
                   <div className="flex flex-wrap gap-1">
@@ -510,7 +493,7 @@ export default function DashboardPage() {
             )}
 
             {!aiLoaded && !aiLoading && (
-              <p className="text-xs text-gray-400">Click &quot;Get Insights&quot; for AI-powered tips based on all your business data.</p>
+              <p className="text-xs text-gray-400">Click &quot;Get Insights&quot; for AI-powered tips based on your business data.</p>
             )}
           </div>
 
@@ -522,7 +505,7 @@ export default function DashboardPage() {
                 {data.recent_logs.map(log => {
                   const m = TYPE_META[log.type] ?? { icon: "📎", label: log.type, in: false, out: false };
                   return (
-                    <div key={log.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors">
+                    <div key={log.id} className="flex items-center gap-3 px-4 py-2.5">
                       <span className="text-base flex-shrink-0">{m.icon}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-gray-800 truncate">
@@ -595,7 +578,7 @@ export default function DashboardPage() {
           )}
 
         </div>
-        {/* ── END RIGHT COLUMN ── */}
+        {/* END RIGHT COLUMN */}
 
       </div>
     </div>

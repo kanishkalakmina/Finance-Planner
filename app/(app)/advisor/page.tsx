@@ -11,12 +11,12 @@ interface AiResponse {
 }
 
 const QUICK_QUESTIONS = [
-  "What products should I focus on selling more?",
-  "How can I improve my profit margin?",
+  "What products should I focus on?",
+  "How can I improve profit margin?",
   "Which expenses can I reduce?",
-  "Is my business growing or declining?",
+  "Is my business growing?",
   "What should I restock first?",
-  "How is my rental business performing?",
+  "How is rental business performing?",
   "What new business paths can I explore?",
   "Which category makes the most profit?",
   "What are my slow-moving products?",
@@ -28,6 +28,7 @@ export default function AdvisorPage() {
   const [response, setResponse] = useState<AiResponse | null>(null);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState("");
+
   async function ask(q: string) {
     if (!q.trim()) return;
     setLoading(true); setError(""); setResponse(null);
@@ -48,9 +49,9 @@ export default function AdvisorPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-5">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">AI Advisor</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">AI Advisor</h2>
         <p className="text-sm text-gray-400 mt-1">Reads all your sales, stock, rentals & expenses to give specific advice.</p>
       </div>
 
@@ -72,13 +73,13 @@ export default function AdvisorPage() {
         <label className="label">Ask the AI Advisor</label>
         <div className="flex gap-2">
           <input type="text" className="input flex-1"
-            placeholder="e.g. Which product gives me the best profit margin?"
+            placeholder="e.g. Which product gives the best margin?"
             value={question}
             onChange={e => setQuestion(e.target.value)}
             onKeyDown={e => e.key === "Enter" && ask(question)}
           />
           <button onClick={() => ask(question)} disabled={loading || !question.trim()}
-            className="btn-primary text-sm px-4 disabled:opacity-50">
+            className="btn-primary px-4 disabled:opacity-50">
             {loading ? "…" : "Ask"}
           </button>
         </div>
@@ -118,8 +119,8 @@ export default function AdvisorPage() {
             </div>
           )}
 
-          {/* 3 action cards */}
-          <div className="grid grid-cols-1 gap-3">
+          {/* Action cards */}
+          <div className="space-y-3">
             <div className="rounded-xl bg-green-50 border border-green-200 px-4 py-3">
               <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-1">✅ Key Action</p>
               <p className="text-sm font-medium text-green-800">{response.key_action}</p>
@@ -140,7 +141,7 @@ export default function AdvisorPage() {
         <div className="card text-center py-12 text-gray-400">
           <p className="text-4xl mb-3">🤖</p>
           <p className="text-sm font-medium">Your AI Business Advisor</p>
-          <p className="text-xs mt-1">Ask a question above or pick one of the quick options</p>
+          <p className="text-xs mt-1">Ask a question or pick from the quick options above</p>
           <p className="text-xs mt-1 text-gray-300">Reads all your sales, stock, rentals & expenses</p>
         </div>
       )}

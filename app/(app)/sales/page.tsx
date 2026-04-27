@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import StatCard from "@/components/ui/StatCard";
 
 function fmt(n: number) { return n.toLocaleString("en-LK", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
@@ -52,7 +53,7 @@ export default function SalesPage() {
     });
     const d = await res.json(); setSaving(false);
     if (!res.ok) { setError(d.error); return; }
-    setSuccess(`Sale recorded! LKR ${fmt(total)} added to shop balance.`);
+    setSuccess(`Sale recorded! LKR ${fmt(total)} added to balance.`);
     setForm({ product_id:"", qty:"1", unit_price:"", date:today, note:"" });
     await load();
     setTimeout(() => setSuccess(""), 4000);
@@ -69,23 +70,14 @@ export default function SalesPage() {
   if (loading) return <div className="text-gray-400 text-sm p-4">Loading…</div>;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5">
-      <h2 className="text-2xl font-bold text-gray-900">Sales</h2>
+    <div className="max-w-2xl mx-auto space-y-4">
+      <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Sales</h2>
 
       {/* Summary */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="card text-center">
-          <p className="text-xs text-gray-400">This Month</p>
-          <p className="text-lg font-bold text-green-600">LKR {fmt(monthRevenue)}</p>
-        </div>
-        <div className="card text-center">
-          <p className="text-xs text-gray-400">Units Sold</p>
-          <p className="text-lg font-bold text-gray-800">{monthSales.reduce((s, l) => s + (l.qty ?? 0), 0)}</p>
-        </div>
-        <div className="card text-center">
-          <p className="text-xs text-gray-400">All-Time</p>
-          <p className="text-lg font-bold text-blue-600">LKR {fmt(sales.reduce((s, l) => s + l.amount, 0))}</p>
-        </div>
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <StatCard label="This Month" value={`LKR ${fmt(monthRevenue)}`} color="green" />
+        <StatCard label="Units Sold" value={String(monthSales.reduce((s, l) => s + (l.qty ?? 0), 0))} color="gray" />
+        <StatCard label="All-Time" value={`LKR ${fmt(sales.reduce((s, l) => s + l.amount, 0))}`} color="blue" />
       </div>
 
       {/* Sale Form */}
@@ -107,13 +99,13 @@ export default function SalesPage() {
                 <option value="">Select product…</option>
                 {products.map(p => (
                   <option key={p.id} value={p.id} disabled={p.quantity === 0}>
-                    {CAT_ICON[p.category]} {p.name} — {p.quantity} in stock{p.quantity === 0 ? " (out of stock)" : ""}
+                    {CAT_ICON[p.category]} {p.name} — {p.quantity} in stock{p.quantity === 0 ? " (out)" : ""}
                   </option>
                 ))}
               </select>
             </div>
             {selectedProduct && (
-              <p className="text-xs text-gray-400">Suggested price: LKR {fmt(selectedProduct.sell_price ?? 0)} · Buy price: LKR {fmt(selectedProduct.buy_price ?? 0)}</p>
+              <p className="text-xs text-gray-400">Suggested: LKR {fmt(selectedProduct.sell_price ?? 0)} · Buy: LKR {fmt(selectedProduct.buy_price ?? 0)}</p>
             )}
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -121,7 +113,7 @@ export default function SalesPage() {
                 <input type="number" min="1" step="1" className="input" required value={form.qty} onChange={e => setForm(f => ({...f, qty:e.target.value}))} />
               </div>
               <div>
-                <label className="label">Price per Unit (LKR)</label>
+                <label className="label">Price / Unit (LKR)</label>
                 <input type="number" min="0.01" step="0.01" className="input" required value={form.unit_price} onChange={e => setForm(f => ({...f, unit_price:e.target.value}))} />
               </div>
               <div>
@@ -130,7 +122,7 @@ export default function SalesPage() {
               </div>
               <div>
                 <label className="label">Note (optional)</label>
-                <input type="text" className="input" placeholder="e.g. Walk-in customer" value={form.note} onChange={e => setForm(f => ({...f, note:e.target.value}))} />
+                <input type="text" className="input" placeholder="e.g. Walk-in" value={form.note} onChange={e => setForm(f => ({...f, note:e.target.value}))} />
               </div>
             </div>
             {previewTotal !== null && (
@@ -145,7 +137,7 @@ export default function SalesPage() {
       </div>
 
       <p className="text-xs text-gray-400 text-center">
-        View full sales history in the <a href="/history" className="text-blue-600 underline">History</a> page.
+        View full history in the <a href="/history" className="text-blue-600 underline">History</a> page.
       </p>
     </div>
   );

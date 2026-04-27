@@ -86,14 +86,15 @@ export default function RentalsPage() {
   if (loading) return <div className="text-gray-400 text-sm p-4">Loading…</div>;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h2 className="text-2xl font-bold text-gray-900">Rentals</h2>
-        <div className="flex gap-2 flex-wrap">
-          {([["active","Active","🔁"],["rent_out","Rent Out","📤"]] as const).map(([t, label, icon]) => (
+    <div className="max-w-2xl mx-auto space-y-4">
+      {/* Header */}
+      <div className="space-y-2">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Rentals</h2>
+        <div className="flex gap-2">
+          {([["active","🔁 Active","active"],["rent_out","📤 Rent Out","rent_out"]] as const).map(([t, label]) => (
             <button key={t} onClick={() => setTab(t)}
               className={`text-sm px-3 py-1.5 rounded-full font-medium border transition-colors ${tab === t ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
-              {icon} {label} {t === "active" && active.length > 0 ? `(${active.length})` : ""}
+              {label} {t === "active" && active.length > 0 ? `(${active.length})` : ""}
             </button>
           ))}
         </div>
@@ -116,18 +117,18 @@ export default function RentalsPage() {
             return (
               <div key={r.id} className={`card border ${overdue ? "border-red-200 bg-red-50" : "border-gray-200"}`}>
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <p className="font-semibold text-gray-800">{r.products?.name ?? "Item"} × {r.quantity}</p>
                     {r.customer_name && <p className="text-sm text-gray-500">Customer: {r.customer_name}</p>}
-                    <p className="text-sm text-gray-500">Rented: {r.rent_date} · Due: {r.expected_return_date}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Rented: {r.rent_date} · Due: {r.expected_return_date}</p>
                     <p className={`text-sm font-medium mt-1 ${overdue ? "text-red-600" : "text-gray-600"}`}>
                       {overdue ? `⚠️ ${Math.abs(days)} days overdue` : `${days} days left`}
                     </p>
-                    <p className="text-sm font-semibold text-gray-700 mt-1">Fee: LKR {fmt(r.rental_fee)}</p>
+                    <p className="text-sm font-semibold text-gray-700 mt-0.5">Fee: LKR {fmt(r.rental_fee)}</p>
                   </div>
                   <button onClick={() => { setReturning(r); setFeeCollected(String(r.rental_fee)); }}
-                    className="btn-primary text-xs flex-shrink-0">
-                    Record Return
+                    className="btn-primary flex-shrink-0">
+                    Return
                   </button>
                 </div>
               </div>
@@ -141,7 +142,7 @@ export default function RentalsPage() {
         <div className="card space-y-4">
           <h3 className="font-semibold text-gray-800">📤 Rent Out an Item</h3>
           {products.length === 0 ? (
-            <p className="text-sm text-gray-400">No rental products. Add products with type "For Rent" in Stock first.</p>
+            <p className="text-sm text-gray-400">No rental products. Add products with type &quot;For Rent&quot; in Stock first.</p>
           ) : (
             <form onSubmit={rentOut} className="space-y-3">
               <div>
@@ -192,8 +193,8 @@ export default function RentalsPage() {
 
       {/* Return Modal */}
       {returning && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm space-y-4">
+        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-5 w-full max-w-sm space-y-4">
             <h3 className="font-bold text-gray-900">Record Return</h3>
             <p className="text-sm text-gray-600">
               {returning.products?.name} × {returning.quantity}
