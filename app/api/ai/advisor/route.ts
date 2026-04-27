@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
+type ProfileRow = { initial_savings: number | null };
+
 function fallback(question: string) {
   return {
     advice: `Regarding "${question}" — keep tracking all transactions daily to build accurate data for better analysis.`,
@@ -42,7 +44,8 @@ export async function POST(request: Request) {
       .eq("user_id", user.id),
   ]);
 
-  const capital  = Number(profileRes.data?.initial_savings ?? 0);
+  const profile  = profileRes.data as ProfileRow | null;
+  const capital  = Number(profile?.initial_savings ?? 0);
   const allLogs  = allLogsRes.data ?? [];
   const products = productsRes.data ?? [];
   const rentals  = rentalsRes.data ?? [];
