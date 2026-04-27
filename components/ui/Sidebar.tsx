@@ -8,6 +8,7 @@ const navItems = [
   { href: "/sales",        label: "Sales",        icon: "🛒" },
   { href: "/rentals",      label: "Rentals",      icon: "🔁" },
   { href: "/stock",        label: "Stock",        icon: "📦" },
+  { href: "/history",      label: "History",      icon: "📋" },
   { href: "/transactions", label: "Transactions", icon: "🧾" },
   { href: "/advisor",      label: "AI Advisor",   icon: "🤖" },
   { href: "/settings",     label: "Settings",     icon: "⚙️" },

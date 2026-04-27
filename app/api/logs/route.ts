@@ -21,7 +21,11 @@ export async function GET(request: Request) {
     .order("date", { ascending: false })
     .order("created_at", { ascending: false });
 
-  if (month) query = query.gte("date", `${month}-01`).lte("date", `${month}-31`);
+  if (month) {
+    const [yr, mo] = month.split("-").map(Number);
+    const lastDay = new Date(yr, mo, 0).toISOString().split("T")[0];
+    query = query.gte("date", `${month}-01`).lte("date", lastDay);
+  }
   if (type)  query = query.eq("type", type);
 
   const { data, error } = await query;
@@ -37,7 +41,7 @@ export async function POST(request: Request) {
   const body = await request.json();
   const { type, product_id, qty, unit_price, amount, date, note } = body;
 
-  const VALID = ["restock","sale","expense","capital","rental_out","rental_return","stock_return"];
+  const VALID = ["restock","sale","expense","capital","rental_out","rental_return","stock_return","withdrawal"];
   if (!VALID.includes(type)) return NextResponse.json({ error: "Invalid type" }, { status: 400 });
   if (amount == null) return NextResponse.json({ error: "Amount required" }, { status: 400 });
   if (!date)          return NextResponse.json({ error: "Date required" }, { status: 400 });

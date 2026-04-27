@@ -22,18 +22,42 @@ const META: Record<string, { icon: string; label: string; in: boolean; out: bool
   rental_return: { icon:"↩️", label:"Rental Return",  in:true,  out:false },
   rental_out:    { icon:"🔁", label:"Rented Out",     in:false, out:false },
   stock_return:  { icon:"↩️", label:"Stock Removed",  in:true,  out:false },
+  withdrawal:    { icon:"🏧", label:"Withdrawal",     in:false, out:true  },
 };
 
-type Filter = "all"|"sale"|"restock"|"expense"|"capital"|"rental_return"|"rental_out";
+type Filter = "all"|"sale"|"restock"|"expense"|"capital"|"rental_return"|"rental_out"|"withdrawal";
+const PAGE_SIZE = 20;
+
+function Pagination({ page, total, onPage }: { page: number; total: number; onPage: (p: number) => void }) {
+  const pages = Math.ceil(total / PAGE_SIZE);
+  if (pages <= 1) return null;
+  return (
+    <div className="flex items-center justify-between pt-2 px-1">
+      <span className="text-xs text-gray-400">Page {page} of {pages}</span>
+      <div className="flex gap-2">
+        <button onClick={() => onPage(page - 1)} disabled={page === 1}
+          className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
+          ← Prev
+        </button>
+        <button onClick={() => onPage(page + 1)} disabled={page >= pages}
+          className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
+          Next →
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function TransactionsPage() {
   const [month, setMonth]   = useState(currentMonth());
   const [filter, setFilter] = useState<Filter>("all");
   const [logs, setLogs]     = useState<Log[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage]     = useState(1);
 
   const load = useCallback(async (m: string) => {
     setLoading(true);
+    setPage(1);
     const data = await fetch(`/api/logs?month=${m}`).then(r => r.json());
     if (Array.isArray(data)) setLogs(data);
     setLoading(false);
@@ -44,11 +68,12 @@ export default function TransactionsPage() {
   const visible = filter === "all" ? logs : logs.filter(l => l.type === filter);
   const totalIn  = logs.filter(l => META[l.type]?.in).reduce((s, l) => s + l.amount, 0);
   const totalOut = logs.filter(l => META[l.type]?.out).reduce((s, l) => s + l.amount, 0);
+  const pagedVisible = visible.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   if (loading) return <div className="text-gray-400 text-sm p-6">Loading…</div>;
 
   return (
-    <div className="max-w-2xl space-y-5">
+    <div className="max-w-2xl mx-auto space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Transactions</h2>
@@ -86,8 +111,9 @@ export default function TransactionsPage() {
           ["capital",      `🏦 Capital`],
           ["rental_return",`↩️ Returns`],
           ["rental_out",   `🔁 Rentals`],
+          ["withdrawal",   `🏧 Withdrawals`],
         ] as [Filter, string][]).map(([f, label]) => (
-          <button key={f} onClick={() => setFilter(f)}
+          <button key={f} onClick={() => { setFilter(f); setPage(1); }}
             className={`text-xs px-3 py-1.5 rounded-full font-medium border transition-colors ${filter === f ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
             {label}
           </button>
@@ -101,33 +127,36 @@ export default function TransactionsPage() {
           <p className="text-sm">No transactions for this period.</p>
         </div>
       ) : (
-        <div className="card p-0 overflow-hidden divide-y divide-gray-50">
-          {visible.map(log => {
-            const m = META[log.type] ?? { icon:"📎", label:log.type, in:false, out:false };
-            return (
-              <div key={log.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-base flex-shrink-0 ${m.in ? "bg-green-100" : m.out ? "bg-red-100" : "bg-gray-100"}`}>
-                  {m.icon}
+        <div className="space-y-3">
+          <div className="card p-0 overflow-hidden divide-y divide-gray-50">
+            {pagedVisible.map(log => {
+              const m = META[log.type] ?? { icon:"📎", label:log.type, in:false, out:false };
+              return (
+                <div key={log.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-base flex-shrink-0 ${m.in ? "bg-green-100" : m.out ? "bg-red-100" : "bg-gray-100"}`}>
+                    {m.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800">
+                      {m.label}{log.products?.name ? ` — ${log.products.name}` : ""}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {log.date}
+                      {log.qty ? ` · ${log.qty} units` : ""}
+                      {log.unit_price ? ` @ LKR ${fmt(log.unit_price)}` : ""}
+                      {log.note ? ` · ${log.note}` : ""}
+                    </p>
+                  </div>
+                  {log.amount > 0 && (
+                    <span className={`text-sm font-bold flex-shrink-0 ${m.in ? "text-green-600" : m.out ? "text-red-500" : "text-gray-500"}`}>
+                      {m.in ? "+" : m.out ? "−" : "·"} LKR {fmt(log.amount)}
+                    </span>
+                  )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-800">
-                    {m.label}{log.products?.name ? ` — ${log.products.name}` : ""}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    {log.date}
-                    {log.qty ? ` · ${log.qty} units` : ""}
-                    {log.unit_price ? ` @ LKR ${fmt(log.unit_price)}` : ""}
-                    {log.note ? ` · ${log.note}` : ""}
-                  </p>
-                </div>
-                {log.amount > 0 && (
-                  <span className={`text-sm font-bold flex-shrink-0 ${m.in ? "text-green-600" : m.out ? "text-red-500" : "text-gray-500"}`}>
-                    {m.in ? "+" : m.out ? "−" : "·"} LKR {fmt(log.amount)}
-                  </span>
-                )}
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+          <Pagination page={page} total={visible.length} onPage={setPage} />
         </div>
       )}
     </div>

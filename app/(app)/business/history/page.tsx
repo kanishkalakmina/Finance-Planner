@@ -171,7 +171,7 @@ export default function BusinessHistoryPage() {
   }
 
   return (
-    <div className="max-w-2xl space-y-5">
+    <div className="max-w-2xl mx-auto space-y-5">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Link href="/business" className="text-gray-400 hover:text-gray-600 text-sm">← Business Wallet</Link>

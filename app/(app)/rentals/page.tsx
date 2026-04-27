@@ -23,7 +23,7 @@ export default function RentalsPage() {
   const [products, setProducts]   = useState<Product[]>([]);
   const [rentals, setRentals]     = useState<Rental[]>([]);
   const [loading, setLoading]     = useState(true);
-  const [tab, setTab]             = useState<"active"|"rent_out"|"history">("active");
+  const [tab, setTab]             = useState<"active"|"rent_out">("active");
   const [error, setError]         = useState("");
   const [success, setSuccess]     = useState("");
 
@@ -81,18 +81,17 @@ export default function RentalsPage() {
     await load();
   }
 
-  const active  = rentals.filter(r => !r.returned);
-  const history = rentals.filter(r => r.returned);
+  const active = rentals.filter(r => !r.returned);
 
   if (loading) return <div className="text-gray-400 text-sm p-4">Loading…</div>;
 
   return (
-    <div className="max-w-2xl space-y-5">
+    <div className="max-w-2xl mx-auto space-y-5">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h2 className="text-2xl font-bold text-gray-900">Rentals</h2>
         <div className="flex gap-2 flex-wrap">
-          {([["active","Active","🔁"],[`rent_out`,"Rent Out","📤"],["history","History","📋"]] as const).map(([t, label, icon]) => (
-            <button key={t} onClick={() => setTab(t as typeof tab)}
+          {([["active","Active","🔁"],["rent_out","Rent Out","📤"]] as const).map(([t, label, icon]) => (
+            <button key={t} onClick={() => setTab(t)}
               className={`text-sm px-3 py-1.5 rounded-full font-medium border transition-colors ${tab === t ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
               {icon} {label} {t === "active" && active.length > 0 ? `(${active.length})` : ""}
             </button>
@@ -187,27 +186,9 @@ export default function RentalsPage() {
         </div>
       )}
 
-      {/* HISTORY */}
-      {tab === "history" && (
-        <div className="card p-0 overflow-hidden">
-          <p className="text-sm font-semibold text-gray-700 px-4 py-3 border-b border-gray-100">Rental History</p>
-          {history.length === 0 ? (
-            <div className="text-center py-8 text-gray-400 text-sm">No completed rentals yet.</div>
-          ) : history.map(r => (
-            <div key={r.id} className="flex items-center gap-3 px-4 py-3 border-b border-gray-50 last:border-0">
-              <span className="text-lg">↩️</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-800">{r.products?.name ?? "Item"} × {r.quantity}</p>
-                <p className="text-xs text-gray-400">
-                  {r.rent_date} → {r.actual_return_date ?? r.expected_return_date}
-                  {r.customer_name ? ` · ${r.customer_name}` : ""}
-                </p>
-              </div>
-              <span className="text-sm font-bold text-green-600 flex-shrink-0">+ LKR {fmt(r.fee_collected ?? r.rental_fee)}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      <p className="text-xs text-gray-400 text-center">
+        View full rental history in the <a href="/history" className="text-blue-600 underline">History</a> page.
+      </p>
 
       {/* Return Modal */}
       {returning && (

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 
 function fmt(n: number) { return n.toLocaleString("en-LK", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
-interface Product { id: string; name: string; category: string; sell_price: number | null; quantity: number; item_type: string; }
+interface Product { id: string; name: string; category: string; sell_price: number | null; buy_price: number | null; quantity: number; item_type: string; }
 interface Log {
   id: string; type: string; qty: number | null; unit_price: number | null; amount: number;
   date: string; note: string | null; products?: { name: string } | null;
@@ -69,7 +69,7 @@ export default function SalesPage() {
   if (loading) return <div className="text-gray-400 text-sm p-4">Loading…</div>;
 
   return (
-    <div className="max-w-2xl space-y-5">
+    <div className="max-w-2xl mx-auto space-y-5">
       <h2 className="text-2xl font-bold text-gray-900">Sales</h2>
 
       {/* Summary */}
@@ -144,25 +144,9 @@ export default function SalesPage() {
         )}
       </div>
 
-      {/* Sales history */}
-      {sales.length > 0 && (
-        <div className="card p-0 overflow-hidden">
-          <p className="text-sm font-semibold text-gray-700 px-4 py-3 border-b border-gray-100">Sales History</p>
-          {sales.map(s => (
-            <div key={s.id} className="flex items-center gap-3 px-4 py-3 border-b border-gray-50 last:border-0">
-              <span className="text-lg">🛒</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-800">{s.products?.name ?? "Product"}</p>
-                <p className="text-xs text-gray-400">
-                  {s.date} · {s.qty ?? 0} unit{(s.qty ?? 0) !== 1 ? "s" : ""} @ LKR {fmt(s.unit_price ?? 0)}
-                  {s.note ? ` · ${s.note}` : ""}
-                </p>
-              </div>
-              <span className="text-sm font-bold text-green-600 flex-shrink-0">+ LKR {fmt(s.amount)}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      <p className="text-xs text-gray-400 text-center">
+        View full sales history in the <a href="/history" className="text-blue-600 underline">History</a> page.
+      </p>
     </div>
   );
 }

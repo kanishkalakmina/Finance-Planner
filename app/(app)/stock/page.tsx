@@ -111,7 +111,7 @@ export default function StockPage() {
   if (loading) return <div className="text-gray-400 text-sm p-4">Loading…</div>;
 
   return (
-    <div className="max-w-2xl space-y-5">
+    <div className="max-w-2xl mx-auto space-y-5">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h2 className="text-2xl font-bold text-gray-900">Stock</h2>
         <div className="flex gap-2">
